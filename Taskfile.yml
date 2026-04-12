@@ -1,0 +1,9 @@
+version: "3"
+
+tasks:
+  test:
+    cmds:
+      - npm run test
+  lint:
+    cmds:
+      - npm run lint

@@ -1,0 +1,69 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - "v*"
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: "npm"
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run lint
+        run: npm run lint
+
+      - name: Run tests
+        run: npm run test
+
+      - name: Update package version
+        run: npm version "${GITHUB_REF_NAME#v}" --no-git-tag-version
+
+      - name: Build
+        run: npm run build
+
+      - name: Update README install command
+        run: |
+          sed -i "s|github:fabysdev/agents#v[0-9][0-9.]*|github:fabysdev/agents#${{ github.ref_name }}|g" README.md
+
+      - name: Commit release files and re-tag
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+
+          # Stage dist/ even though it's in .gitignore
+          git add -f dist/
+          git add README.md package.json package-lock.json
+
+          # Only commit if there are actual changes
+          git diff --cached --quiet && echo "Nothing to commit" && exit 0
+
+          git commit -m "release ${{ github.ref_name }}"
+
+          # Move the tag to this new commit (the one that includes dist/)
+          git tag -f ${{ github.ref_name }}
+          git push origin -f ${{ github.ref_name }}
+
+          # Push the README update back to main so it stays current there too
+          git push origin HEAD:main
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ github.ref_name }}
+          generate_release_notes: true
