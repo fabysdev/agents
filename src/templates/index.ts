@@ -23,18 +23,7 @@ import * as tddPrompt from "./prompts/tdd.js";
 import * as lintSkill from "./skills/lint.js";
 import * as testSkill from "./skills/test.js";
 
-export const agents: TemplateEntry[] = [
-  analyst,
-  critic,
-  explorer,
-  implementer,
-  planner,
-  rapid,
-  reviewer,
-  tdd,
-  testConsolidator,
-  testEngineer,
-];
+export const agents: TemplateEntry[] = [analyst, critic, explorer, implementer, planner, rapid, reviewer, tdd, testConsolidator, testEngineer];
 
 export const prompts: TemplateEntry[] = [devPrompt, rapidPrompt, tddPrompt];
 

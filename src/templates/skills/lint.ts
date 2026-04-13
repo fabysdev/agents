@@ -1,4 +1,4 @@
-import type { Tool } from "../index.js";
+import type {Tool} from "../index.js";
 
 export const relativePath = "lint/SKILL.md";
 
