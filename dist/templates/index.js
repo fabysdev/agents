@@ -13,18 +13,7 @@ import * as rapidPrompt from "./prompts/rapid.js";
 import * as tddPrompt from "./prompts/tdd.js";
 import * as lintSkill from "./skills/lint.js";
 import * as testSkill from "./skills/test.js";
-export const agents = [
-    analyst,
-    critic,
-    explorer,
-    implementer,
-    planner,
-    rapid,
-    reviewer,
-    tdd,
-    testConsolidator,
-    testEngineer,
-];
+export const agents = [analyst, critic, explorer, implementer, planner, rapid, reviewer, tdd, testConsolidator, testEngineer];
 export const prompts = [devPrompt, rapidPrompt, tddPrompt];
 export const skills = [lintSkill, testSkill];
 //# sourceMappingURL=index.js.map

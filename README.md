@@ -9,7 +9,7 @@ My opinionated AI workflow for coding.
 ## Installation
 
 ```bash
-npx github:fabysdev/agents#v0.2.0
+npx github:fabysdev/agents#v0.3.0
 ```
 
 ### After Installation
