@@ -3,8 +3,8 @@
 My opinionated AI workflow for coding.
 
 - Agents for analysis, planning, implementation, review, TDD orchestration, and rapid orchestration
-- Prompt or command entrypoints for `/tdd`, `/rapid`, and `/dev`
-- Project skills for linting and testing
+- Workflow skills for `/tdd`, `/rapid`, and `/dev`
+- Validation skills for linting and testing
 
 ## Installation
 

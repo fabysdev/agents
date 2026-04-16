@@ -1,7 +1,7 @@
 import fs from "node:fs";
 import path from "node:path";
 
-import {agents as agentTemplates, prompts as promptTemplates, skills as skillTemplates, type TemplateEntry} from "./templates/index.js";
+import {agents as agentTemplates, skills as skillTemplates, type TemplateEntry} from "./templates/index.js";
 
 export type {Tool, TemplateEntry} from "./templates/index.js";
 
@@ -12,7 +12,6 @@ export interface InstallOptions {
 
 export interface InstallResult {
   agents: number;
-  prompts: number;
   skillsWritten: number;
   skillsSkipped: number;
 }
@@ -22,22 +21,12 @@ export function install({targetBase, tool}: InstallOptions): InstallResult {
 
   const renameAgent = tool === "opencode" ? (filename: string): string => filename.replace(".agent.md", ".md") : undefined;
 
-  const renamePrompt = tool === "opencode" ? (filename: string): string => filename.replace(".prompt.md", ".md") : undefined;
-
   const agents = writeTemplates({
     entries: agentTemplates,
     targetDir: path.join(targetBase, "agents"),
     tool,
     overwrite: true,
     renameFile: renameAgent
-  });
-
-  const prompts = writeTemplates({
-    entries: promptTemplates,
-    targetDir: path.join(targetBase, tool === "copilot" ? "prompts" : "commands"),
-    tool,
-    overwrite: true,
-    renameFile: renamePrompt
   });
 
   const skillsResult = writeTemplates({
@@ -49,7 +38,6 @@ export function install({targetBase, tool}: InstallOptions): InstallResult {
 
   return {
     agents: agents.written,
-    prompts: prompts.written,
     skillsWritten: skillsResult.written,
     skillsSkipped: skillsResult.skipped
   };

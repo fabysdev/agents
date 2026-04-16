@@ -5,7 +5,7 @@ import os from "node:os";
 import path from "node:path";
 import {afterEach, beforeEach, describe, it} from "node:test";
 
-import {agents, prompts, skills} from "../src/templates/index.js";
+import {agents, skills} from "../src/templates/index.js";
 
 const REPO_ROOT: string = path.resolve(import.meta.dirname, "..");
 const BIN_PATH: string = path.join(REPO_ROOT, "dist", "cli.js");
@@ -15,10 +15,8 @@ describe("install script e2e", () => {
   let tempDir: string;
 
   const expectedAgentFiles: string[] = agents.map((a) => a.relativePath).sort();
-  const expectedPromptFiles: string[] = prompts.map((p) => p.relativePath).sort();
   const expectedSkillFiles: string[] = skills.map((s) => s.relativePath).sort();
   const expectedOpenCodeAgentFiles: string[] = expectedAgentFiles.map((f) => f.replace(/\.agent\.md$/, ".md")).sort();
-  const expectedOpenCodeCommandFiles: string[] = expectedPromptFiles.map((f) => f.replace(/\.prompt\.md$/, ".md")).sort();
 
   beforeEach((): void => {
     tempDir = fs.mkdtempSync(path.join(os.tmpdir(), "fabysagents-e2e-"));
@@ -37,11 +35,9 @@ describe("install script e2e", () => {
 
     // Assert
     assert.strictEqual(expectedAgentFiles.length, 10);
-    assert.strictEqual(expectedPromptFiles.length, 3);
-    assert.strictEqual(expectedSkillFiles.length, 2);
+    assert.strictEqual(expectedSkillFiles.length, 5);
 
     assert.deepStrictEqual(collectRelativeFiles(path.join(targetGithubPath, "agents")), expectedAgentFiles);
-    assert.deepStrictEqual(collectRelativeFiles(path.join(targetGithubPath, "prompts")), expectedPromptFiles);
     assert.deepStrictEqual(collectRelativeFiles(path.join(targetGithubPath, "skills")), expectedSkillFiles);
 
     const installedAgentFiles: string[] = collectRelativeFiles(path.join(targetGithubPath, "agents"));
@@ -57,9 +53,6 @@ describe("install script e2e", () => {
     assert.ok(!installedAgentContent.includes("<!-- opencode-header -->"));
     assert.ok(!installedAgentContent.includes("<!-- body -->"));
 
-    const firstPrompt = prompts.find((p) => p.relativePath === expectedPromptFiles[0]);
-    assert.strictEqual(fs.readFileSync(path.join(targetGithubPath, "prompts", expectedPromptFiles[0]), "utf8"), firstPrompt!.render("copilot"));
-
     const firstSkill = skills.find((s) => s.relativePath === expectedSkillFiles[0]);
     assert.strictEqual(fs.readFileSync(path.join(targetGithubPath, "skills", expectedSkillFiles[0]), "utf8"), firstSkill!.render("copilot"));
   });
@@ -69,10 +62,7 @@ describe("install script e2e", () => {
     const stdout: string = runInstaller(tempDir, ["--tool", "copilot"]);
 
     // Assert
-    assert.match(
-      stdout,
-      new RegExp(`Installed\\s+for\\s+copilot:\\s+${agents.length}\\s+agents,\\s+${prompts.length}\\s+prompts,\\s+${skills.length}\\s+skills\\s+\\(0\\s+skipped existing\\)`)
-    );
+    assert.match(stdout, new RegExp(`Installed\\s+for\\s+copilot:\\s+${agents.length}\\s+agents,\\s+${skills.length}\\s+skills\\s+\\(0\\s+skipped existing\\)`));
   });
 
   it("runs when invoked through a symlinked bin path", (): void => {
@@ -91,24 +81,19 @@ describe("install script e2e", () => {
     assert.ok(fs.existsSync(path.join(tempDir, ".github", "agents")));
   });
 
-  it("overwrites agents and prompts on re-run", (): void => {
+  it("overwrites agents on re-run", (): void => {
     // Arrange
     runInstaller(tempDir, ["--tool", "copilot"]);
     const agentPath: string = path.join(tempDir, ".github", "agents", expectedAgentFiles[0]);
-    const promptPath: string = path.join(tempDir, ".github", "prompts", expectedPromptFiles[0]);
     const originalAgentContent: string = fs.readFileSync(agentPath, "utf8");
 
     fs.writeFileSync(agentPath, "MODIFIED AGENT CONTENT\n");
-    fs.writeFileSync(promptPath, "MODIFIED PROMPT CONTENT\n");
 
     // Act
     runInstaller(tempDir, ["--tool", "copilot"]);
 
     // Assert
     assert.strictEqual(fs.readFileSync(agentPath, "utf8"), originalAgentContent);
-
-    const firstPrompt = prompts.find((p) => p.relativePath === expectedPromptFiles[0]);
-    assert.strictEqual(fs.readFileSync(promptPath, "utf8"), firstPrompt!.render("copilot"));
   });
 
   it("preserves existing skill files on re-run", (): void => {
@@ -144,7 +129,7 @@ describe("install script e2e", () => {
   });
 
   describe("install --tool opencode", () => {
-    it("fresh install writes agents, commands, and skills into .opencode/", (): void => {
+    it("fresh install writes agents and skills into .opencode/", (): void => {
       // Arrange
       const targetOpenCodePath: string = path.join(tempDir, ".opencode");
 
@@ -153,15 +138,10 @@ describe("install script e2e", () => {
 
       // Assert
       assert.deepStrictEqual(collectRelativeFiles(path.join(targetOpenCodePath, "agents")), expectedOpenCodeAgentFiles);
-      assert.deepStrictEqual(collectRelativeFiles(path.join(targetOpenCodePath, "commands")), expectedOpenCodeCommandFiles);
       assert.deepStrictEqual(collectRelativeFiles(path.join(targetOpenCodePath, "skills")), expectedSkillFiles);
 
       for (const relativePath of expectedOpenCodeAgentFiles) {
         assertStartsWithYamlFrontmatter(path.join(targetOpenCodePath, "agents", relativePath));
-      }
-
-      for (const entry of prompts) {
-        assert.strictEqual(fs.readFileSync(path.join(targetOpenCodePath, "commands", entry.relativePath.replace(/\.prompt\.md$/, ".md")), "utf8"), entry.render("opencode"));
       }
 
       for (const entry of skills) {
@@ -169,6 +149,7 @@ describe("install script e2e", () => {
       }
 
       assert.ok(!fs.existsSync(path.join(targetOpenCodePath, "prompts")));
+      assert.ok(!fs.existsSync(path.join(targetOpenCodePath, "commands")));
     });
 
     it("agent filenames use .md extension", (): void => {
@@ -206,10 +187,7 @@ describe("install script e2e", () => {
       const stdout: string = runInstaller(tempDir, ["--tool", "opencode"]);
 
       // Assert
-      assert.match(
-        stdout,
-        new RegExp(`Installed\\s+for\\s+opencode:\\s+${agents.length}\\s+agents,\\s+${prompts.length}\\s+commands,\\s+${skills.length}\\s+skills\\s+\\(0\\s+skipped existing\\)`)
-      );
+      assert.match(stdout, new RegExp(`Installed\\s+for\\s+opencode:\\s+${agents.length}\\s+agents,\\s+${skills.length}\\s+skills\\s+\\(0\\s+skipped existing\\)`));
     });
 
     it("agents are overwritten on re-run", (): void => {
@@ -231,24 +209,20 @@ describe("install script e2e", () => {
       assert.match(readAgentHeader(agentPath), OPENCODE_MODEL_PATTERN);
     });
 
-    it("commands are overwritten and skills are preserved on re-run", (): void => {
+    it("skills are preserved on re-run", (): void => {
       // Arrange
       const targetOpenCodePath: string = path.join(tempDir, ".opencode");
 
       runInstaller(tempDir, ["--tool", "opencode"]);
-      const commandPath: string = path.join(targetOpenCodePath, "commands", expectedOpenCodeCommandFiles[0]);
       const skillPath: string = path.join(targetOpenCodePath, "skills", expectedSkillFiles[0]);
-      const originalCommandContent: string = fs.readFileSync(commandPath, "utf8");
-      const customSkillContent: string = "---\nname: lint\ndescription: Project-specific lint skill\ncompatibility: opencode\n---\nKeep the existing lint flow.\n";
+      const customSkillContent: string = "---\nname: dev\ndescription: Project-specific dev skill\ncompatibility: opencode\n---\nKeep the existing dev flow.\n";
 
-      fs.writeFileSync(commandPath, "MODIFIED OPENCODE COMMAND CONTENT\n");
       fs.writeFileSync(skillPath, customSkillContent);
 
       // Act
       runInstaller(tempDir, ["--tool", "opencode"]);
 
       // Assert
-      assert.strictEqual(fs.readFileSync(commandPath, "utf8"), originalCommandContent);
       assert.strictEqual(fs.readFileSync(skillPath, "utf8"), customSkillContent);
     });
   });

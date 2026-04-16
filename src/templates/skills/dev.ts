@@ -1,24 +1,28 @@
 import type {Tool} from "../index.js";
 
-export const relativePath = "dev.prompt.md";
+export const relativePath = "dev/SKILL.md";
 
 export function render(tool: Tool): string {
-  let header;
+  let frontmatter;
 
   switch (tool) {
     case "copilot":
-      header = `agent: agent
-description: Develop prompt with emphasis on tests and observability.`;
+      frontmatter = `name: dev
+description: Implement a feature or fix with emphasis on tests and observability. Use this skill when asked to develop, implement, or make code changes that require proper test coverage.
+argument-hint: "[feature or change to implement]"`;
       break;
     case "opencode":
-      header = `description: Develop prompt with emphasis on tests and observability.
-agent: build`;
+      frontmatter = `name: dev
+description: Implement a feature or fix with emphasis on tests and observability. Use this skill when asked to develop, implement, or make code changes that require proper test coverage.
+compatibility: opencode`;
       break;
   }
 
   return `---
-${header}
+${frontmatter}
 ---
+
+# Dev
 
 Implement the user request.
 

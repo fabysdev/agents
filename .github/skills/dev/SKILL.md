@@ -1,7 +1,10 @@
 ---
-agent: agent
-description: Develop prompt with emphasis on tests and observability.
+name: dev
+description: Implement a feature or fix with emphasis on tests and observability. Use this skill when asked to develop, implement, or make code changes that require proper test coverage.
+argument-hint: "[feature or change to implement]"
 ---
+
+# Dev
 
 Implement the user request.
 
