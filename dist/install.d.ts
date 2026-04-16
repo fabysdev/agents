@@ -5,7 +5,6 @@ export interface InstallOptions {
 }
 export interface InstallResult {
     agents: number;
-    prompts: number;
     skillsWritten: number;
     skillsSkipped: number;
 }

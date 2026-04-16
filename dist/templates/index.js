@@ -8,12 +8,11 @@ import * as reviewer from "./agents/fabys-reviewer.js";
 import * as tdd from "./agents/fabys-tdd.js";
 import * as testConsolidator from "./agents/fabys-test-consolidator.js";
 import * as testEngineer from "./agents/fabys-test-engineer.js";
-import * as devPrompt from "./prompts/dev.js";
-import * as rapidPrompt from "./prompts/rapid.js";
-import * as tddPrompt from "./prompts/tdd.js";
+import * as devSkill from "./skills/dev.js";
 import * as lintSkill from "./skills/lint.js";
+import * as rapidSkill from "./skills/rapid.js";
+import * as tddSkill from "./skills/tdd.js";
 import * as testSkill from "./skills/test.js";
 export const agents = [analyst, critic, explorer, implementer, planner, rapid, reviewer, tdd, testConsolidator, testEngineer];
-export const prompts = [devPrompt, rapidPrompt, tddPrompt];
-export const skills = [lintSkill, testSkill];
+export const skills = [devSkill, lintSkill, rapidSkill, tddSkill, testSkill];
 //# sourceMappingURL=index.js.map

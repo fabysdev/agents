@@ -49,8 +49,7 @@ export async function runCli() {
     const tool = await determineTool(process.argv);
     const targetBase = path.join(process.cwd(), tool === "copilot" ? ".github" : ".opencode");
     const result = install({ targetBase, tool });
-    const promptLabel = tool === "copilot" ? "prompts" : "commands";
-    process.stdout.write(`Installed for ${tool}: ${result.agents} agents, ${result.prompts} ${promptLabel}, ${result.skillsWritten} skills (${result.skillsSkipped} skipped existing)\n`);
+    process.stdout.write(`Installed for ${tool}: ${result.agents} agents, ${result.skillsWritten} skills (${result.skillsSkipped} skipped existing)\n`);
 }
 function askQuestion(readline, prompt) {
     return new Promise((resolve) => {
