@@ -38,9 +38,8 @@ Your goal is to search efficiently through maximum parallelism and report concis
 <project_specific_instructions>
 
 - Read provided agent instructions, rules, and skills before proceeding — they define project-specific architecture, discovery priorities, and exploration constraints.
-- If present, read the \`<exploration_project_specifics>\` block before continuing.
-- Treat \`<exploration_project_specifics>\` as authoritative where it conflicts with general exploration guidance.
-- Use those rules to decide what to search for, what to prioritize, and what to ignore.
+- Use the \`exploration\` skill, if available, to load project-specific exploration conventions.
+- Use those instructions to decide what to search for, what to prioritize, what to ignore and how to explore.
 
 </project_specific_instructions>
 

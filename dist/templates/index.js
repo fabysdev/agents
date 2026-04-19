@@ -9,10 +9,28 @@ import * as tdd from "./agents/fabys-tdd.js";
 import * as testConsolidator from "./agents/fabys-test-consolidator.js";
 import * as testEngineer from "./agents/fabys-test-engineer.js";
 import * as devSkill from "./skills/dev.js";
+import * as explorationSkill from "./skills/exploration.js";
+import * as implementationSkill from "./skills/implementation.js";
 import * as lintSkill from "./skills/lint.js";
+import * as planningSkill from "./skills/planning.js";
 import * as rapidSkill from "./skills/rapid.js";
+import * as reviewSkill from "./skills/review.js";
 import * as tddSkill from "./skills/tdd.js";
+import * as testConsolidationSkill from "./skills/test-consolidation.js";
+import * as testEngineeringSkill from "./skills/test-engineering.js";
 import * as testSkill from "./skills/test.js";
 export const agents = [analyst, critic, explorer, implementer, planner, rapid, reviewer, tdd, testConsolidator, testEngineer];
-export const skills = [devSkill, lintSkill, rapidSkill, tddSkill, testSkill];
+export const skills = [
+    devSkill,
+    explorationSkill,
+    implementationSkill,
+    lintSkill,
+    planningSkill,
+    rapidSkill,
+    reviewSkill,
+    tddSkill,
+    testConsolidationSkill,
+    testEngineeringSkill,
+    testSkill
+];
 //# sourceMappingURL=index.js.map
