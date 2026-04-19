@@ -4,6 +4,7 @@ My opinionated AI workflow for coding.
 
 - Agents for analysis, planning, implementation, review, TDD orchestration, and rapid orchestration
 - Workflow skills for `/tdd`, `/rapid`, and `/dev`
+- Role-specific skills for exploration, planning, implementation, review, test engineering, and test consolidation
 - Validation skills for linting and testing
 
 ## Installation
@@ -24,36 +25,28 @@ The generated files are starting points. Make the skills and instructions match 
 
 - Update the installed test skill so it reflects the real test workflow for your project, `skills/test/SKILL.md`.
 
-### Project-Specific Instructions
+## Project-Specific Instructions
 
 - Keep broader repository guidance in the main instructions file for the tool you chose.
 
 This keeps the installed agents reusable while still giving the tool the local context it needs to behave correctly in your codebase.
 
-## Agent Roles and Block Tags
+### Role-Specific Skills
 
-The agents tell the model to pay attention to project instructions, skills, and rules. For the agents that depend heavily on repository-specific conventions, you can make that guidance more reliable by adding dedicated XML-style blocks to your main instruction file.
+Each agent loads a matching skill to pick up project-specific conventions. The installed skills are starting-point templates — customize them to describe your project's actual constraints.
 
-When one of these blocks is present, the matching agent is told to check it explicitly and treat it as authoritative for that role. If a block conflicts with generic best practices, the project-specific block wins.
+| Skill                | Used by                                      | Purpose                                                         |
+| -------------------- | -------------------------------------------- | --------------------------------------------------------------- |
+| `exploration`        | fabys-explorer                               | Search priorities, exclusions, and discovery hints              |
+| `planning`           | fabys-planner                                | Planning constraints, phase structure, and quality bars         |
+| `implementation`     | fabys-implementer                            | Architecture, coding standards, and validation requirements     |
+| `review`             | fabys-reviewer                               | Review rules that override generic heuristics                   |
+| `test-engineering`   | fabys-test-engineer, fabys-test-consolidator | Coverage expectations, mocking boundaries, and test conventions |
+| `test-consolidation` | fabys-test-consolidator                      | Merge boundaries and structure preservation rules               |
 
-- `fabys-explorer` checks \`<exploration_project_specifics>\` for search priorities, exclusions, and repository-specific discovery hints.
-- `fabys-planner` checks \`<planning_project_specifics>\` for planning constraints that must appear in \`plan.md\` and every phase file.
-- `fabys-implementer` checks \`<implementation_project_specifics>\` for architecture, conventions, and validation requirements.
-- `fabys-reviewer` checks \`<review_project_specifics>\` for review rules that override generic review heuristics.
-- `fabys-test-engineer` checks \`<test_engineering_project_specifics>\` for coverage expectations, mocking boundaries, and red-phase requirements.
-- `fabys-test-consolidator` checks \`<test_consolidation_project_specifics>\` for merge boundaries and structure that must be preserved.
+If a skill is present, the matching agent treats it as authoritative. If it conflicts with generic best practices, the project-specific skill wins.
 
-Example:
-
-```xml
-<review_project_specifics>
-- Authorization must use `hasPermission()` and `usePermissions()` patterns; never role-name checks.
-- User-facing text must go through i18next.
-- External input should be validated with Zod before use.
-</review_project_specifics>
-```
-
-Put these blocks in the same instruction file where you keep the rest of your repository guidance. Keep them short, concrete, and role-specific.
+Customize the skills in the `skills/` directory to match your project. Keep them short, concrete, and role-specific.
 
 ## Usage
 

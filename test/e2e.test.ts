@@ -10,6 +10,7 @@ import {agents, skills} from "../src/templates/index.js";
 const REPO_ROOT: string = path.resolve(import.meta.dirname, "..");
 const BIN_PATH: string = path.join(REPO_ROOT, "dist", "cli.js");
 const OPENCODE_MODEL_PATTERN = /model:\s+\S+\/\S+/;
+const COPILOT_SKILL_COUNT = 11;
 
 describe("install script e2e", () => {
   let tempDir: string;
@@ -35,7 +36,7 @@ describe("install script e2e", () => {
 
     // Assert
     assert.strictEqual(expectedAgentFiles.length, 10);
-    assert.strictEqual(expectedSkillFiles.length, 5);
+    assert.strictEqual(expectedSkillFiles.length, COPILOT_SKILL_COUNT);
 
     assert.deepStrictEqual(collectRelativeFiles(path.join(targetGithubPath, "agents")), expectedAgentFiles);
     assert.deepStrictEqual(collectRelativeFiles(path.join(targetGithubPath, "skills")), expectedSkillFiles);
@@ -100,8 +101,8 @@ describe("install script e2e", () => {
     // Arrange
     runInstaller(tempDir, ["--tool", "copilot"]);
     const customSkillContents: Map<string, string> = new Map([
-      [expectedSkillFiles[0], "---\nname: custom-skill\n---\nProject-specific lint\n"],
-      [expectedSkillFiles[1], "---\nname: custom-skill\n---\nProject-specific test\n"]
+      ["exploration/SKILL.md", "---\nname: custom-exploration\n---\nPrefer ripgrep and skip generated directories.\n"],
+      ["test/SKILL.md", "---\nname: custom-test\n---\nRun the repository test workflow.\n"]
     ]);
 
     for (const [relativePath, content] of customSkillContents) {
@@ -214,8 +215,9 @@ describe("install script e2e", () => {
       const targetOpenCodePath: string = path.join(tempDir, ".opencode");
 
       runInstaller(tempDir, ["--tool", "opencode"]);
-      const skillPath: string = path.join(targetOpenCodePath, "skills", expectedSkillFiles[0]);
-      const customSkillContent: string = "---\nname: dev\ndescription: Project-specific dev skill\ncompatibility: opencode\n---\nKeep the existing dev flow.\n";
+      const skillPath: string = path.join(targetOpenCodePath, "skills", "test-engineering", "SKILL.md");
+      const customSkillContent: string =
+        "---\nname: test-engineering\ndescription: Project-specific test engineering skill\ncompatibility: opencode\n---\nKeep the existing red-phase workflow.\n";
 
       fs.writeFileSync(skillPath, customSkillContent);
 

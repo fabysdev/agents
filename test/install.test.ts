@@ -9,6 +9,70 @@ import {agents, skills, type TemplateEntry} from "../src/templates/index.js";
 import {parseArgs} from "../src/cli.js";
 
 const OPENCODE_MODEL_PATTERN = /model:\s+\S+\/\S+/;
+const EXPECTED_SKILL_PATHS: string[] = [
+  "dev/SKILL.md",
+  "exploration/SKILL.md",
+  "implementation/SKILL.md",
+  "lint/SKILL.md",
+  "planning/SKILL.md",
+  "rapid/SKILL.md",
+  "review/SKILL.md",
+  "tdd/SKILL.md",
+  "test-consolidation/SKILL.md",
+  "test-engineering/SKILL.md",
+  "test/SKILL.md"
+].sort();
+const PROJECT_SPECIFIC_INSTRUCTION_EXPECTATIONS: Array<{
+  relativePath: string;
+  requiredSnippets: string[];
+  forbiddenSnippets: string[];
+}> = [
+  {
+    relativePath: "fabys-explorer.agent.md",
+    requiredSnippets: [
+      "Use the `exploration` skill, if available, to load project-specific exploration conventions.",
+      "Use those instructions to decide what to search for, what to prioritize, what to ignore and how to explore."
+    ],
+    forbiddenSnippets: ["<exploration_project_specifics>"]
+  },
+  {
+    relativePath: "fabys-planner.agent.md",
+    requiredSnippets: [
+      "Use the `planning` skill to load project-specific planning conventions.",
+      "Treat those conventions as authoritative where they conflict with default planning heuristics."
+    ],
+    forbiddenSnippets: ["<planning_project_specifics>"]
+  },
+  {
+    relativePath: "fabys-implementer.agent.md",
+    requiredSnippets: [
+      "Use the `implementation` skill to load project-specific implementation conventions.",
+      "Treat those conventions as authoritative where they conflict with general implementation guidance."
+    ],
+    forbiddenSnippets: ["<implementation_project_specifics>"]
+  },
+  {
+    relativePath: "fabys-reviewer.agent.md",
+    requiredSnippets: ["Use the `review` skill to load project-specific review standards.", "Treat those standards as authoritative where they conflict with general review heuristics."],
+    forbiddenSnippets: ["<review_project_specifics>"]
+  },
+  {
+    relativePath: "fabys-test-engineer.agent.md",
+    requiredSnippets: [
+      "Use the `test-engineering` skill to load project-specific test conventions.",
+      "Treat those conventions as authoritative where they conflict with general testing guidance."
+    ],
+    forbiddenSnippets: ["<test_engineering_project_specifics>"]
+  },
+  {
+    relativePath: "fabys-test-consolidator.agent.md",
+    requiredSnippets: [
+      "Use the `test-consolidation`, if available, and `test-engineering` skill to load project-specific test consolidation conventions.",
+      "Treat those conventions as authoritative where they conflict with general consolidation guidance."
+    ],
+    forbiddenSnippets: ["<test_consolidation_project_specifics>"]
+  }
+];
 
 describe("template rendering", () => {
   const tools: Tool[] = ["copilot", "opencode"];
@@ -89,6 +153,26 @@ describe("template rendering", () => {
         assert.ok(!output.includes("user-invocable:"));
       }
     });
+
+    for (const expectation of PROJECT_SPECIFIC_INSTRUCTION_EXPECTATIONS) {
+      it(`${expectation.relativePath} uses role-specific skills instead of XML blocks`, (): void => {
+        // Arrange
+        const entry = agents.find((agent) => agent.relativePath === expectation.relativePath);
+
+        // Assert
+        assert.ok(entry);
+
+        const output: string = entry!.render("copilot");
+
+        for (const snippet of expectation.requiredSnippets) {
+          assert.ok(output.includes(snippet));
+        }
+
+        for (const snippet of expectation.forbiddenSnippets) {
+          assert.ok(!output.includes(snippet));
+        }
+      });
+    }
   });
 
   describe("skills", () => {
@@ -120,6 +204,14 @@ describe("template rendering", () => {
         assert.ok(!output.includes("argument-hint:"));
       });
     }
+
+    it("exports the full workflow and role-specific skill set", (): void => {
+      // Arrange
+      const relativePaths: string[] = skills.map((entry) => entry.relativePath).sort();
+
+      // Assert
+      assert.deepStrictEqual(relativePaths, EXPECTED_SKILL_PATHS);
+    });
   });
 
   it("render function returns same content for same arguments", (): void => {
@@ -185,9 +277,11 @@ describe("install", () => {
     // Arrange
     const existingLintContent: string = "---\nname: lint\n---\nProject-specific lint instructions\n";
     const existingTestContent: string = "---\nname: test\n---\nProject-specific test instructions\n";
+    const existingExplorationContent: string = "---\nname: exploration\n---\nProject-specific exploration instructions\n";
 
     writeFile(targetBase, path.join("skills", "lint", "SKILL.md"), existingLintContent);
     writeFile(targetBase, path.join("skills", "test", "SKILL.md"), existingTestContent);
+    writeFile(targetBase, path.join("skills", "exploration", "SKILL.md"), existingExplorationContent);
 
     // Act
     install({targetBase, tool: "copilot"});
@@ -195,6 +289,7 @@ describe("install", () => {
     // Assert
     assert.strictEqual(fs.readFileSync(path.join(targetBase, "skills", "lint", "SKILL.md"), "utf8"), existingLintContent);
     assert.strictEqual(fs.readFileSync(path.join(targetBase, "skills", "test", "SKILL.md"), "utf8"), existingTestContent);
+    assert.strictEqual(fs.readFileSync(path.join(targetBase, "skills", "exploration", "SKILL.md"), "utf8"), existingExplorationContent);
   });
 
   it("creates target directories recursively when they don't exist", (): void => {
@@ -210,8 +305,10 @@ describe("install", () => {
     // Assert
     assert.ok(fs.existsSync(nestedTargetBase));
     assert.ok(fs.existsSync(path.join(nestedTargetBase, "agents")));
-    assert.ok(fs.existsSync(path.join(nestedTargetBase, "skills", "lint")));
-    assert.ok(fs.existsSync(path.join(nestedTargetBase, "skills", "test")));
+
+    for (const relativePath of EXPECTED_SKILL_PATHS) {
+      assert.ok(fs.existsSync(path.join(nestedTargetBase, "skills", path.dirname(relativePath))));
+    }
   });
 
   it("returns correct counts for a fresh install", (): void => {
@@ -266,8 +363,7 @@ describe("install", () => {
       install({targetBase, tool: "copilot"});
 
       // Assert
-      const expectedSkills: string[] = skills.map((s) => s.relativePath).sort();
-      assert.deepStrictEqual(collectRelativeFiles(path.join(targetBase, "skills")), expectedSkills);
+      assert.deepStrictEqual(collectRelativeFiles(path.join(targetBase, "skills")), EXPECTED_SKILL_PATHS);
     });
 
     it("agent filenames preserve .agent.md extension", (): void => {
@@ -336,9 +432,7 @@ describe("install", () => {
       });
 
       // Assert
-      const expectedSkills: string[] = skills.map((skill) => skill.relativePath).sort();
-
-      assert.deepStrictEqual(collectRelativeFiles(path.join(targetOpenCodeBase, "skills")), expectedSkills);
+      assert.deepStrictEqual(collectRelativeFiles(path.join(targetOpenCodeBase, "skills")), EXPECTED_SKILL_PATHS);
 
       for (const entry of skills) {
         const targetPath: string = path.join(targetOpenCodeBase, "skills", entry.relativePath);
@@ -352,9 +446,12 @@ describe("install", () => {
       const targetOpenCodeBase: string = path.join(tempRoot, "target-project", ".opencode");
       const existingLintContent: string = "---\nname: lint\ndescription: Project-specific lint skill\ncompatibility: opencode\n---\nKeep the existing lint flow.\n";
       const existingTestContent: string = "---\nname: test\ndescription: Project-specific test skill\ncompatibility: opencode\n---\nKeep the existing test flow.\n";
+      const existingTestEngineeringContent: string =
+        "---\nname: test-engineering\ndescription: Project-specific test engineering skill\ncompatibility: opencode\n---\nKeep the existing red-phase workflow.\n";
 
       writeFile(targetOpenCodeBase, path.join("skills", "lint", "SKILL.md"), existingLintContent);
       writeFile(targetOpenCodeBase, path.join("skills", "test", "SKILL.md"), existingTestContent);
+      writeFile(targetOpenCodeBase, path.join("skills", "test-engineering", "SKILL.md"), existingTestEngineeringContent);
 
       // Act
       install({
@@ -365,6 +462,7 @@ describe("install", () => {
       // Assert
       assert.strictEqual(fs.readFileSync(path.join(targetOpenCodeBase, "skills", "lint", "SKILL.md"), "utf8"), existingLintContent);
       assert.strictEqual(fs.readFileSync(path.join(targetOpenCodeBase, "skills", "test", "SKILL.md"), "utf8"), existingTestContent);
+      assert.strictEqual(fs.readFileSync(path.join(targetOpenCodeBase, "skills", "test-engineering", "SKILL.md"), "utf8"), existingTestEngineeringContent);
     });
 
     it("returns command and skill counts for opencode", (): void => {

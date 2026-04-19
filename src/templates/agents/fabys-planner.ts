@@ -49,8 +49,8 @@ You are a Planning Agent. Your sole responsibility is to produce \`./.plan/{feat
 <project_specific_instructions>
 
 - Read provided agent instructions, rules, and skills before proceeding — they define project-specific architecture, planning constraints, and quality bars.
-- If present, read the \`<planning_project_specifics>\` block before continuing.
-- Treat \`<planning_project_specifics>\` as authoritative where it conflicts with default planning heuristics.
+- Use the \`planning\` skill to load project-specific planning conventions.
+- Treat those conventions as authoritative where they conflict with default planning heuristics.
 - Reflect those rules explicitly in \`plan.md\` and every \`phase*.md\`.
 
 </project_specific_instructions>
