@@ -1,7 +1,7 @@
 ---
 name: fabys-analyst
 description: Analyst agent specializes in analyzing user requests and researching the codebase to produce a structured feature context document.
-model: Claude Opus 4.6 (copilot)
+model: GPT-5.4 (copilot)
 tools:
   [
     vscode/askQuestions,

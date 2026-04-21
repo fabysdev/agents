@@ -3,7 +3,7 @@ name: fabys-rapid
 description: >
   Rapid development orchestrator for projects that benefit from structured spec/plan workflows but don't need tests.
   Delegates all work to specialized subagents: Expansion → Planning → Implementation → Optional Review.
-model: Claude Opus 4.6 (copilot)
+model: GPT-5.4 (copilot)
 tools:
   [
     vscode/askQuestions,

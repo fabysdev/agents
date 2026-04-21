@@ -48,6 +48,14 @@ If a skill is present, the matching agent treats it as authoritative. If it conf
 
 Customize the skills in the `skills/` directory to match your project. Keep them short, concrete, and role-specific.
 
+## Model Thinking Effort
+
+Recommended thinking effort settings for the models used in this workflow:
+
+| Model               | Recommended effort | Why                                                                        |
+| ------------------- | ------------------ | -------------------------------------------------------------------------- |
+| `GPT-5.4 (copilot)` | `xhigh`            | Core orchestration and implementation quality benefit from deep reasoning. |
+
 ## Usage
 
 These are the three entrypoints I use.

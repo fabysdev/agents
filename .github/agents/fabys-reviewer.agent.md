@@ -1,7 +1,7 @@
 ---
 name: fabys-reviewer
 description: Code Review & Quality Assurance Agent
-model: Claude Opus 4.6 (copilot)
+model: GPT-5.4 (copilot)
 tools:
   [
     vscode/memory,

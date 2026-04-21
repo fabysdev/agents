@@ -3,7 +3,7 @@ name: fabys-tdd
 description: >
   Main orchestrator agent for Test-Driven Development (TDD).
   The agent delegates all work to specialized subagents, ensuring that tests drive the development process and that quality is maintained at every stage.
-model: Claude Opus 4.6 (copilot)
+model: GPT-5.4 (copilot)
 tools:
   [
     vscode/askQuestions,

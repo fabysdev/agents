@@ -1,7 +1,7 @@
 ---
 name: fabys-critic
 description: Critic agent reviews implementation plans for completeness, feasibility, and gaps before execution begins.
-model: Claude Opus 4.6 (copilot)
+model: GPT-5.4 (copilot)
 tools:
   [
     vscode/askQuestions,
