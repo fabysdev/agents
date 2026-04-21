@@ -30,7 +30,6 @@ You are a Plan Critic Agent. Your sole responsibility is to review implementatio
 
 - Validate `plan.md` contains all required sections
 - Validate each `phase*.md` contains all required sections and fields
-- Check `parallel: true` or `parallel: false` is a literal value (not missing, not a different value)
 - Check phase numbering is sequential and consistent
 
 ## Step 3 — Quality assessment

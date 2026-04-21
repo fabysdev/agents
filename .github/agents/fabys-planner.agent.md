@@ -113,8 +113,8 @@ Create a concrete implementation plan.
 - Make the high-level decisions here. Do not defer architecture choices to later agents.
 - Every phase must include explicit test strategy, mock boundaries, and verification steps.
 - Prefer small, concrete phases that are independently executable.
-- Separate sequential work from parallel work explicitly.
-- Create `plan.md` plus `phase*.md` files, and include a `parallel: true|false` field in every phase file.
+- Sequence phases for one-at-a-time execution. Do not plan concurrent phase work.
+- Create `plan.md` plus `phase*.md` files.
 
 ## Step 5 — Validate
 
@@ -123,7 +123,6 @@ Before finishing, verify:
 - `./.plan/{feature-name}/plan.md` exists
 - at least one `./.plan/{feature-name}/phase*.md` exists
 - every phase file contains:
-  - `parallel: true` or `parallel: false`
   - scope
   - test strategy
   - dependencies
@@ -165,7 +164,7 @@ Must include:
 1. **Request summary** — restated goal in neutral, unambiguous terms
 2. **Recommended approach** — chosen strategy and why it was selected over alternatives
 3. **Architecture and key decisions** — structural choices, trade-offs, and rationale
-4. **Phase overview** — ordering, dependencies, and which phases can run in parallel
+4. **Phase overview** — ordering and dependencies across phases
 5. **Relevant files, symbols, and reusable patterns** — grounded codebase references the implementer needs
 6. **Overall test strategy** — test framework, coverage goals, and approach across phases
 7. **Verification plan** — concrete commands or steps to validate the full feature end-to-end
@@ -177,7 +176,6 @@ Must include:
 Each phase file must use this structure:
 
 - `# Phase N: <name>`
-- `parallel: true|false`
 - `## Objective` — what this phase achieves in one sentence
 - `## Scope` — included work and explicit exclusions
 - `## Dependencies` — prior phases this blocks on, or `none`
@@ -194,7 +192,6 @@ Each phase file must use this structure:
 
 Requirements:
 
-- `parallel:` must be a literal `true` or `false`
 - Scope must state included work and explicit exclusions
 - Dependencies must reference prior phases or say `none`
 - Test strategy must be specific enough for a test-writing or implementation agent to act without re-analyzing
@@ -205,7 +202,7 @@ After writing the files, return a concise summary covering:
 
 - feature directory path
 - files created
-- sequencing and parallelism
+- phase sequencing
 - key architecture decisions
 - overall testing approach
 - notable risks
@@ -214,7 +211,6 @@ After writing the files, return a concise summary covering:
 
 <failure_modes>
 
-- leaving out the `parallel:` field or using anything other than `true` or `false`
 - creating analysis phases instead of implementation phases
 - writing generic test strategy with no concrete behaviors, mocks, or test data
 - creating extra files beyond `plan.md` and `phase*.md`

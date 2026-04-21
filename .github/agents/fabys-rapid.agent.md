@@ -77,7 +77,7 @@ Before announcing a stage complete, validate each agent's deliverable:
 
 - `./.plan/[feature-name]/plan.md` exists
 - At least one `phase*.md` file exists
-- Each phase file includes: scope, implementation outline, and a `parallel: true/false` flag
+- Each phase file includes: scope, implementation outline, and dependencies
 
 **Stage 3 (Implementation):**
 
@@ -113,7 +113,6 @@ The ISO-8601 timestamp should be generated at the moment of state update (e.g., 
   "phases": [
     {
       "id": "phase1",
-      "parallel": false,
       "status": "pending"
     }
   ],
@@ -192,8 +191,7 @@ Maintain a structured run log at `./.plan/[feature-name]/run-log.md`. Append an 
 ## Stage 2: Planning
 
 1. Invoke fabys-planner to create an implementation plan based on `spec.md`.
-   - Include in the prompt: **"This is a rapid/no-test workflow. Set all test strategy sections to 'N/A — rapid workflow, no tests required'. Focus on implementation clarity and phase ordering."**
-   - Each phase file must include a `parallel: true/false` flag.
+  - Include in the prompt: **"This is a rapid/no-test workflow. Set all test strategy sections to 'N/A — rapid workflow, no tests required'. Focus on implementation clarity and sequential phase ordering."**
 2. Validate output per Stage 2 rules above.
 3. Invoke fabys-critic to review the plan. Track cycle count in `state.json`.
    - Include in the prompt: **"This is a no-test workflow. Skip test strategy quality checks. Focus on feasibility, scope clarity, implementation completeness, and codebase grounding."**
@@ -205,8 +203,8 @@ Maintain a structured run log at `./.plan/[feature-name]/run-log.md`. Append an 
 
 ## Stage 3: Implementation
 
-1. Identify phases with `parallel: true` and sequential phases.
-2. Invoke fabys-implementer **once per phase**: parallel-flagged phases concurrently, sequential phases in dependency order. Do NOT pass multiple phases to a single invocation.
+1. Process phases sequentially in phase-number order, respecting declared dependencies.
+2. Invoke fabys-implementer **once per phase**. Never run multiple phase implementations concurrently or pass multiple phases to a single invocation.
    - Include in the prompt: **"This is Standard mode — no tests exist. Implement directly from phase specifications. Skip test validation. Lint validation still applies if a lint skill is available."**
 3. **For each phase**, before invoking the subagent:
    - Inform the user: "⏳ Starting implementation of Phase [N]: [phase name]"

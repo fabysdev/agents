@@ -110,7 +110,7 @@ Before announcing a stage complete, validate each agent's deliverable:
 
 - \`./.plan/[feature-name]/plan.md\` exists
 - At least one \`phase*.md\` file exists
-- Each phase file includes: scope, test strategy, and a \`parallel: true/false\` flag
+- Each phase file includes: scope, test strategy, and dependencies
 
 **Stage 3 (Red Phase):**
 
@@ -151,7 +151,6 @@ The ISO-8601 timestamp should be generated at the moment of state update (e.g., 
   "phases": [
     {
       "id": "phase1",
-      "parallel": false,
       "status": "RED",
       "tests_passing": false
     }
@@ -230,7 +229,7 @@ Maintain a structured run log at \`./.plan/[feature-name]/run-log.md\`. Append a
 
 ## Stage 2: Planning
 
-1. Invoke fabys-planner to create an implementation plan based on \`spec.md\`. Each phase file must include a \`parallel: true/false\` flag.
+1. Invoke fabys-planner to create an implementation plan based on \`spec.md\`. Phase files must be ordered for sequential execution.
 2. Validate output per Stage 2 rules above.
 3. Invoke fabys-critic to review the plan. Track cycle count in \`state.json\`.
    - Changes required and cycle < 3: return to step 1 with critic feedback.
@@ -241,8 +240,8 @@ Maintain a structured run log at \`./.plan/[feature-name]/run-log.md\`. Append a
 
 ## Stage 3: TDD Red Phase — Write Failing Tests
 
-1. Identify phases with \`parallel: true\` and sequential phases.
-2. Invoke fabys-test-engineer **once per phase** — parallel-flagged phases concurrently, sequential phases in dependency order. Do NOT pass multiple phases to a single invocation.
+1. Process phases sequentially in phase-number order, respecting declared dependencies.
+2. Invoke fabys-test-engineer **once per phase**. Never run multiple Red-phase subagents concurrently or pass multiple phases to a single invocation.
 3. **For each phase**, before invoking the subagent:
    - Inform the user: "⏳ Starting Red phase for Phase [N]: [phase name]"
 4. **For each phase**, immediately after the subagent completes and validation passes:
@@ -254,8 +253,8 @@ Maintain a structured run log at \`./.plan/[feature-name]/run-log.md\`. Append a
 
 ## Stage 4: TDD Green Phase — Implement Code to Pass Tests
 
-1. Identify phases with \`parallel: true\` and sequential phases.
-2. Invoke fabys-implementer **once per phase**: parallel-flagged phases concurrently, sequential in dependency order. Minimal implementation first, then refactor while keeping tests green. Do NOT pass multiple phases to a single invocation.
+1. Process phases sequentially in phase-number order, respecting declared dependencies.
+2. Invoke fabys-implementer **once per phase**. Never run multiple Green-phase subagents concurrently or pass multiple phases to a single invocation. Minimal implementation first, then refactor while keeping tests green.
 3. **For each phase**, before invoking the subagent:
    - Inform the user: "⏳ Starting Green phase for Phase [N]: [phase name]"
 4. **For each phase**, immediately after the subagent completes and validation passes:
