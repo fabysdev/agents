@@ -124,7 +124,8 @@ If validation fails, do NOT proceed. Retry the responsible agent with specific f
 </output_validation>
 
 <state_management>
-Maintain a versioned, immutable state snapshot at \`./.plan/[feature-name]/state.json\` throughout the workflow. Update it after each stage completes — never mutate a previous version in place.
+Maintain a single workflow state file at \`./.plan/[feature-name]/state.json\` throughout the workflow. Update it after each stage or phase completes. 
+Do not delete and recreate the file unless it is missing or unreadable.
 
 The ISO-8601 timestamp should be generated at the moment of state update (e.g., \`date -Iseconds\` terminal command).
 
