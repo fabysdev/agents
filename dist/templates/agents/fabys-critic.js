@@ -5,7 +5,7 @@ export function render(tool) {
         case "copilot":
             header = `name: fabys-critic
 description: Critic agent reviews implementation plans for completeness, feasibility, and gaps before execution begins.
-model: Claude Opus 4.6 (copilot)
+model: GPT-5.4 (copilot)
 tools:
   [
     vscode/askQuestions,
@@ -24,7 +24,7 @@ user-invocable: false`;
         case "opencode":
             header = `description: Critic agent reviews implementation plans for completeness, feasibility, and gaps before execution begins.
 mode: subagent
-model: github-copilot/claude-opus-4.6
+model: github-copilot/gpt-5.4
 tools:
   bash: true`;
             break;

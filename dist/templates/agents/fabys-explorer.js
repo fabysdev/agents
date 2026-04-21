@@ -23,7 +23,7 @@ user-invocable: false`;
         case "opencode":
             header = `description: Exploration agent specialized in codebase analysis
 mode: subagent
-model: github-copilot/claude-opus-4.6
+model: github-copilot/gpt-5.4
 tools:
   bash: true`;
             break;

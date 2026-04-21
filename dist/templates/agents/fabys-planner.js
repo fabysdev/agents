@@ -5,7 +5,7 @@ export function render(tool) {
         case "copilot":
             header = `name: fabys-planner
 description: Planner agent creates plan.md and phase files with explicit test strategies.
-model: Claude Opus 4.6 (copilot)
+model: GPT-5.4 (copilot)
 tools:
   [
     vscode/askQuestions,
@@ -27,7 +27,7 @@ user-invocable: false`;
         case "opencode":
             header = `description: Planner agent creates plan.md and phase files with explicit test strategies.
 mode: subagent
-model: github-copilot/claude-opus-4.6
+model: github-copilot/gpt-5.4
 tools:
   edit: true
   write: true
