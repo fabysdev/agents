@@ -41,6 +41,7 @@ Read the request and any existing planning artifacts, especially `./.plan/{featu
 - target outcome
 - likely codebase areas
 - what is already decided
+- whether this is a fresh plan or an append-only replan against existing phase files
 - what remains ambiguous
 - what must be testable
 
@@ -114,6 +115,7 @@ Create a concrete implementation plan.
 - Every phase must include explicit test strategy, mock boundaries, and verification steps.
 - Prefer small, concrete phases that are independently executable.
 - Sequence phases for one-at-a-time execution. Do not plan concurrent phase work.
+- If the caller says existing phase files must be preserved, treat the run as append-only replanning: keep existing phase files untouched, update `plan.md` to integrate the new work, and append only new `phaseNN_<slug>.md` files after the highest existing phase number.
 - Create `plan.md` plus `phase*.md` files.
 
 ## Step 5 — Validate
@@ -128,6 +130,7 @@ Before finishing, verify:
   - dependencies
   - verification
   - acceptance criteria
+- if this was append-only replanning, no pre-existing phase file was rewritten, renumbered, or deleted
 - phases describe implementation work, not "analyze", "investigate", or "decide"
 - file, symbol, and pattern references are grounded in the actual codebase
 
@@ -142,6 +145,7 @@ Before finishing, verify:
 - Include explicit test strategy for every phase
 - Keep plans practical, reversible, and minimal unless the codebase requires otherwise
 - Do not create files other than `plan.md` and `phase*.md`
+- When explicitly instructed to preserve existing phases, never rewrite, renumber, or delete them; add only supplemental phases and update `plan.md` accordingly
 - Minimize code blocks in plans — describe changes conceptually and reference existing patterns. Brief examples are acceptable only for configuration files.
 - Plans must be detailed enough for a lower-tier model (e.g., Haiku/Sonnet-class) to implement without re-analyzing the codebase — leave no ambiguity in implementation steps
 - Always wait for each subagent (especially fabys-explorer) to fully complete and return results before proceeding to the next step
@@ -156,6 +160,8 @@ Required files:
 
 - `plan.md`
 - `phase01_<slug>.md`, `phase02_<slug>.md`, and so on
+
+When running in append-only replanning mode, preserve existing phase numbering and continue from the next available phase number.
 
 ### `plan.md`
 
