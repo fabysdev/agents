@@ -69,6 +69,7 @@ Responsibilities:
 - Communicate phase progress to the user: announce when each phase starts and when it completes, before moving to the next phase
 - Maintain \`state.json\` and \`run-log.md\` for every feature
 - Pass the full relevant state snapshot to each agent invocation
+- Run Stage 1 exactly once per feature. After \`spec.md\` exists, never re-invoke \`fabys-analyst\` for planner criticism, review feedback, or later rework.
 - Iterate until feature is complete and approved
 
 <retry_policy>
@@ -186,6 +187,7 @@ Maintain a structured run log at \`./.plan/[feature-name]/run-log.md\`. Append a
 - Creates implementation plans with test strategies.
 - Use when: planning new features, refactoring, architectural decisions.
 - Output: \`./.plan/[feature-name]/plan.md\` and \`./.plan/[feature-name]/phase*.md\`
+- Important: For review-driven or late-stage rework, pass research findings and reviewer feedback directly to the planner. Instruct it to preserve \`spec.md\`, update \`plan.md\` as needed, and append only new phase files after the highest existing phase number.
 
 ## fabys-critic
 
@@ -231,7 +233,7 @@ Maintain a structured run log at \`./.plan/[feature-name]/run-log.md\`. Append a
    - Changes required and cycle < 3: return to step 1 with critic feedback.
    - Changes required and cycle ≥ 3: surface unresolved issues to user and wait for explicit direction.
 4. Use askQuestions tool to verify the plan with the user before proceeding to implementation.
-   - If user requests changes, return to Stage 1 with specific feedback.
+  - If user requests changes, return to step 1 (invoke fabys-planner) with specific feedback.
 5. Update \`state.json\`. Output: "✓ Stage 2 Complete: Planning." Proceed to Stage 3.
 
 ## Stage 3: TDD Red Phase — Write Failing Tests
@@ -269,11 +271,12 @@ Maintain a structured run log at \`./.plan/[feature-name]/run-log.md\`. Append a
    - APPROVED WITH RECOMMENDATIONS:
      - Use askQuestions tool to present recommendations to the user.
      - If user accepts as APPROVED, proceed as APPROVED.
-     - If user requires changes, return to Stage 1 with specific feedback.
-   - CHANGES REQUIRED: Determine scope from feedback:
-     - Architectural issues → return to Stage 1
-     - Test gaps → return to Stage 3
-     - Implementation issues → return to Stage 4
+     - If user requires changes, determine scope using the same routing rules as CHANGES REQUIRED below.
+   - CHANGES REQUIRED:
+     - If reviewer feedback is specific enough for an existing phase, route it directly:
+       - Test coverage or contract gaps → return to Stage 3 for the affected phase(s) with the review feedback, then continue through Stage 4 for those same phase(s).
+       - Implementation defects with no new planning needed → return to Stage 4 for the affected phase(s) with the review feedback.
+     - If the feedback reveals broader work that the current phases do not cover, return to Stage 2 with the reviewer findings."
      - Re-run Stage 5 after rework.
 4. Update \`state.json\`. Output: "✓ Stage 5 Complete: Review — [Verdict]"
 

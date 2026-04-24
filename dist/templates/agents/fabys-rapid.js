@@ -68,6 +68,7 @@ Responsibilities:
 - Communicate phase progress to the user: announce when each phase starts and when it completes, before moving to the next phase
 - Maintain \`state.json\` and \`run-log.md\` for every feature
 - Pass the full relevant state snapshot to each agent invocation
+- Run Stage 1 exactly once per feature. After \`spec.md\` exists, never re-invoke \`fabys-analyst\` for planner criticism, review feedback, or later rework.
 - Iterate until feature is complete
 
 <retry_policy>
@@ -180,6 +181,7 @@ Maintain a structured run log at \`./.plan/[feature-name]/run-log.md\`. Append a
 - Creates implementation plans with phase files.
 - Use when: planning new features, refactoring, architectural decisions.
 - Output: \`./.plan/[feature-name]/plan.md\` and \`./.plan/[feature-name]/phase*.md\`
+- Important: For review-driven or late-stage rework, pass research findings and reviewer feedback directly to the planner. Instruct it to preserve \`spec.md\`, update \`plan.md\` as needed, and append only new phase files after the highest existing phase number.
 - **Important:** Instruct the planner that this is a no-test workflow. Test strategy sections in phases should be set to "N/A — rapid workflow, no tests required" so the planner doesn't waste effort on test planning.
 
 ## fabys-critic
@@ -226,7 +228,7 @@ Maintain a structured run log at \`./.plan/[feature-name]/run-log.md\`. Append a
    - Changes required and cycle < 3: return to step 1 with critic feedback.
    - Changes required and cycle ≥ 3: surface unresolved issues to user and wait for explicit direction.
 4. Use askQuestions tool to verify the plan with the user before proceeding to implementation.
-   - If user requests changes, return to step 1 with specific feedback.
+   - If user requests changes, return to step 1 (invoke fabys-planner) with specific feedback.
 5. Update \`state.json\`. Output: "✓ Stage 2 Complete: Planning." Proceed to Stage 3.
 
 ## Stage 3: Implementation
@@ -256,10 +258,10 @@ Maintain a structured run log at \`./.plan/[feature-name]/run-log.md\`. Append a
    - APPROVED WITH RECOMMENDATIONS:
      - Use askQuestions tool to present recommendations to the user.
      - If user accepts as APPROVED, proceed as APPROVED.
-     - If user requires changes, return to the appropriate stage with specific feedback.
-   - CHANGES REQUIRED: Determine scope from feedback:
-     - Architectural issues → return to Stage 1
-     - Implementation issues → return to Stage 3
+     - If user requires changes, determine scope using the same routing rules as CHANGES REQUIRED below.
+   - CHANGES REQUIRED:
+     - If review feedback is specific enough for an existing phase or a localized change, return directly to Stage 3 for the affected phase(s) and pass the reviewer feedback verbatim.
+     - If the feedback reveals broader work that the current phases do not cover, return to Stage 2 with the reviewer findings."
      - Re-run Stage 4 after rework.
 4. Update \`state.json\`. Output: "✓ Stage 4 Complete: Review — [Verdict]"
 
