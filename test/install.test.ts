@@ -124,6 +124,48 @@ const PORTABILITY_INSTRUCTION_EXPECTATIONS: Array<{
     requiredSnippets: ["`fabys-exploration` skill"]
   }
 ];
+const WORKFLOW_STATE_EXPECTATIONS: Array<{
+  relativePath: string;
+  requiredSnippets: string[];
+  forbiddenSnippets: string[];
+}> = [
+  {
+    relativePath: "fabys-rapid.agent.md",
+    requiredSnippets: [
+      "Keep `state.json` as the single source of truth for workflow progress",
+      "Phase files remain named `phase*.md`; never rename them to track progress",
+      '"status": "planning"',
+      '"current_stage": "planning"'
+    ],
+    forbiddenSnippets: ["COMPLETE_*", "RED_*"]
+  },
+  {
+    relativePath: "fabys-tdd.agent.md",
+    requiredSnippets: [
+      "Keep `state.json` as the single source of truth for workflow progress",
+      "`state.json` marks a phase as `red_complete` after Red and `complete` after Green",
+      '"status": "planning"',
+      '"current_stage": "planning"'
+    ],
+    forbiddenSnippets: ["COMPLETE_*", "RED_*"]
+  }
+];
+const VALIDATION_CONTRACT_EXPECTATIONS: Array<{
+  relativePath: string;
+  requiredSnippets: string[];
+  forbiddenSnippets: string[];
+}> = [
+  {
+    relativePath: "fabys-implementer.agent.md",
+    requiredSnippets: ["**Standard no-test:**", "Skip mandatory test validation unless the caller explicitly asks for tests", "required validation for the chosen mode"],
+    forbiddenSnippets: ["Code is NOT complete until both lint and test pass."]
+  },
+  {
+    relativePath: "fabys-reviewer.agent.md",
+    requiredSnippets: ["**No-test review:**", "Do not block solely because tests are absent.", "Test skill: exit code [0|N] — [PASS|FAIL|N/A]"],
+    forbiddenSnippets: ["Lint and test pass. Coverage >80%. Production-ready."]
+  }
+];
 
 describe("template rendering", () => {
   const tools: Tool[] = ["copilot", "opencode", "claude"];
@@ -249,6 +291,46 @@ describe("template rendering", () => {
           }
         });
       }
+    }
+
+    for (const expectation of WORKFLOW_STATE_EXPECTATIONS) {
+      it(`${expectation.relativePath} uses resumable state without workflow file renames`, (): void => {
+        // Arrange
+        const entry = allAgents.find((agent) => agent.relativePath === expectation.relativePath);
+
+        // Assert
+        assert.ok(entry);
+
+        const output: string = entry!.render("copilot");
+
+        for (const snippet of expectation.requiredSnippets) {
+          assert.ok(output.includes(snippet));
+        }
+
+        for (const snippet of expectation.forbiddenSnippets) {
+          assert.ok(!output.includes(snippet));
+        }
+      });
+    }
+
+    for (const expectation of VALIDATION_CONTRACT_EXPECTATIONS) {
+      it(`${expectation.relativePath} supports workflow-specific validation contracts`, (): void => {
+        // Arrange
+        const entry = allAgents.find((agent) => agent.relativePath === expectation.relativePath);
+
+        // Assert
+        assert.ok(entry);
+
+        const output: string = entry!.render("copilot");
+
+        for (const snippet of expectation.requiredSnippets) {
+          assert.ok(output.includes(snippet));
+        }
+
+        for (const snippet of expectation.forbiddenSnippets) {
+          assert.ok(!output.includes(snippet));
+        }
+      });
     }
   });
 

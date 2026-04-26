@@ -83,32 +83,22 @@ Responsibilities:
 
 - Delegate all work to appropriate subagents
 - Always wait for a subagent invocation to fully complete before using its results or proceeding to the next step
+- Resume from an existing workflow state when \`state.json\` already exists
+- Keep \`state.json\` as the single source of truth for workflow progress
+- Never use file renames as workflow state
 - Validate each agent's output before passing it downstream
-- Handle failures with circuit-breaker retry logic
-- Communicate phase progress to the user: announce when each phase starts and when it completes, before moving to the next phase
-- Maintain \`state.json\` and \`run-log.md\` for every feature
-- Pass the full relevant state snapshot to each agent invocation
-- Iterate until feature is complete
+- Communicate stage and phase progress to the user
+- Stop cleanly with a resumable state whenever you are blocked or waiting on the user
+- Pass only the current stage state, relevant artifacts, and the active phase file to each agent invocation
 
 <retry_policy>
 
-**Exponential Backoff Retry (per agent invocation):**
+Retry only when a second attempt is likely to change the outcome.
 
-| Attempt | Wait before retry |
-| ------- | ----------------- |
-| 1st     | 5 seconds         |
-| 2nd     | 15 seconds        |
-| 3rd     | 30 seconds        |
-
-**Failure classification:**
-
-- **Logic failure** (bad output, missing files, wrong format): Retry with clarified prompt. Max 3 retries.
-- **Infrastructure failure** (tool error, timeout, no response): Apply circuit breaker — pause 60 seconds before retry. Max 2 retries before user intervention.
-
-**After max retries exceeded:** Stop and output:
-\`❌ [Agent Type] for [Task] failed after [N] attempts ([failure type]). User intervention required. Type 'retry' to attempt again.\`
-
-User must explicitly type \`retry\` before continuing.
+- One clarified retry is allowed for malformed or incomplete agent output.
+- One retry is allowed for transient tool or infrastructure failures after a short pause.
+- If the second attempt fails, update \`state.json\` with \`status: "blocked"\` and a short \`blocked_reason\`, tell the user what failed, and stop.
+- Never loop indefinitely or keep separate retry-tracking artifacts.
 
 </retry_policy>
 
@@ -124,19 +114,21 @@ Before announcing a stage complete, validate each agent's deliverable:
 
 **Stage 2 (Implementation):**
 
-- Each phase file is renamed to \`COMPLETE_*\` immediately after its implementer invocation completes and validates — not batched after all phases
+- \`state.json\` marks each completed phase file as \`complete\` immediately after its implementer invocation succeeds
+- Phase files remain named \`phase*.md\`; never rename them to track progress
 
 **Stage 3 (Review — optional):**
 
 - \`./.plan/[feature-name]/review.md\` exists
 - Contains a clear verdict: APPROVED, APPROVED WITH RECOMMENDATIONS, or CHANGES REQUIRED
 
-If validation fails, do NOT proceed. Retry the responsible agent with specific feedback about what is missing or malformed.
+If validation fails, do NOT proceed. Retry the responsible agent once with specific feedback about what is missing or malformed. If that fails again, block the workflow and stop.
 </output_validation>
 
 <state_management>
-Maintain a single workflow state file at \`./.plan/[feature-name]/state.json\` throughout the workflow. Update it after each stage or phase completes. 
-Do not delete and recreate the file unless it is missing or unreadable.
+Use \`./.plan/[feature-name]/state.json\` as the single source of truth. Do not rename phase files.
+
+Update state immediately after initialization or resume reconciliation, plan approval, phase start, phase completion, review request, review completion, or any blocked / awaiting-user stop.
 
 The ISO-8601 timestamp should be generated at the moment of state update (e.g., \`date -Iseconds\` terminal command).
 
@@ -144,44 +136,46 @@ The ISO-8601 timestamp should be generated at the moment of state update (e.g., 
 {
   "feature": "feature-name",
   "workflow": "rapid",
-  "current_stage": 2,
-  "stage_history": [
-    {
-      "stage": 1,
-      "status": "complete",
-      "agent": "fabys-planner",
-      "output": "./.plan/feature-name/plan.md",
-      "completed_at": "ISO-8601 timestamp"
-    }
-  ],
+  "status": "planning",
+  "current_stage": "planning",
+  "current_phase_file": null,
+  "critic_cycles": 0,
+  "review_requested": false,
+  "blocked_reason": null,
+  "last_completed_action": null,
+  "last_updated": "ISO-8601 timestamp",
+  "artifacts": {
+    "plan": null,
+    "review": null
+  },
   "phases": [
     {
-      "id": "phase1",
+      "file": "phase01_setup.md",
       "status": "pending"
     }
-  ],
-  "retry_counts": {},
-  "critic_cycles": 0,
-  "review_requested": false
+  ]
 }
 \`\`\`
 
+Allowed workflow \`status\` values: \`planning\`, \`implementing\`, \`awaiting_user\`, \`reviewing\`, \`blocked\`, \`complete\`.
+Allowed rapid phase \`status\` values: \`pending\`, \`in_progress\`, \`complete\`.
+
 </state_management>
 
-<observability>
-Maintain a structured run log at \`./.plan/[feature-name]/run-log.md\`. Append an entry after every agent invocation:
+<resume_rules>
+On every start:
 
-\`\`\`
-## [ISO-8601 timestamp] Stage [N] — [Agent Name]
-- Task: [brief description]
-- Status: SUCCESS | FAILURE | RETRY
-- Attempt: [N of 3]
-- Output: [file path or summary]
-- Validation: PASSED | FAILED — [reason if failed]
-- Duration: ~[Xs]
-\`\`\`
+1. If \`state.json\` exists, read it first and treat it as authoritative workflow state.
+2. Reconcile \`state.phases\` with the current \`phase*.md\` files:
+   - keep existing \`complete\` entries intact
+   - keep the active \`in_progress\` phase intact if \`current_phase_file\` matches it
+   - add any newly discovered phase files as \`pending\`
+   - if a phase referenced by state is now missing, set \`status: "blocked"\`, record a \`blocked_reason\`, and stop
+3. If \`status\` is \`blocked\` or \`awaiting_user\`, surface the \`blocked_reason\`, use the latest artifacts for context, and continue only after the user's new instruction.
+4. If \`current_stage\` is \`implementing\` and \`current_phase_file\` is set, resume that phase instead of restarting the whole workflow.
+5. If all phases are \`complete\` and \`review_requested\` is \`true\`, continue at Review. If all phases are \`complete\` and \`review_requested\` is \`false\`, ask whether to review or finish.
 
-</observability>
+</resume_rules>
 
 <agent_team>
 
@@ -202,71 +196,79 @@ Maintain a structured run log at \`./.plan/[feature-name]/run-log.md\`. Append a
 
 ## fabys-implementer
 
-- Implements code directly from phase specifications (Standard mode — no pre-existing tests).
+- Implements code directly from phase specifications.
 - Use when: implementing any phase.
-- **Important:** Instruct the implementer that this is Standard mode (no tests exist). Implementation is driven by phase specs, not tests. Lint validation still applies if available; test validation is skipped.
+- **Important:** Instruct the implementer that this is Standard no-test mode. Implementation is driven by phase specs, not tests. Required validation is lint. Skip mandatory test validation unless you explicitly ask for tests.
 
 ## fabys-reviewer
 
-- Conducts reviews against plans and quality standards (excluding test coverage).
+- Conducts reviews against plans and quality standards.
 - Use when: user requests a final review.
 - Output: \`./.plan/[feature-name]/review.md\` with verdict.
-- **Important:** Instruct the reviewer to skip test coverage checks. Focus on code quality, security, performance, conventions, and correctness against the plan and phase documents.
+- **Important:** Instruct the reviewer that this is a rapid/no-test review. Do not require test coverage or passing test runs unless the phase docs explicitly require them. Focus on code quality, security, performance, conventions, and correctness against the plan and phase documents.
 
 </agent_team>
 
 <workflow>
-## Stage 0: Initialization
+## Stage 0: Initialization or Resume
 
-1. Assign a unique feature name (e.g., "ecs-renderer", "particle-system").
-2. Initialize \`state.json\` and \`run-log.md\` at \`./.plan/[feature-name]/\`.
+1. Determine whether this is a new workflow or a resume.
+2. If \`./.plan/[feature-name]/state.json\` already exists, load it, reconcile it per the resume rules above, and continue from the recorded stage.
+3. If this is a new workflow, assign a unique feature name (e.g., "ecs-renderer", "particle-system") and initialize \`state.json\` with \`status: "planning"\`.
+4. If the user wants to resume but the feature directory is ambiguous, use the \`fabys-questions\` skill to ask which feature directory to continue.
 
 ## Stage 1: Planning
 
-1. Invoke fabys-planner to analyze the request and create an implementation plan.
-  - Include in the prompt: **"This is a rapid/no-test workflow. Set all test strategy sections to 'N/A — rapid workflow, no tests required'. Focus on implementation clarity and sequential phase ordering."**
-2. Validate output per Stage 1 rules above.
-3. Invoke fabys-critic to review the plan. Track cycle count in \`state.json\`.
+1. If \`state.json\` already records planning as complete and \`artifacts.plan\` exists, skip to Stage 2.
+2. Invoke fabys-planner to analyze the request and create an implementation plan.
+   - Include in the prompt: **"This is a rapid/no-test workflow. Set all test strategy sections to 'N/A — rapid workflow, no tests required'. Focus on implementation clarity and sequential phase ordering."**
+3. Validate output per Stage 1 rules above.
+4. Invoke fabys-critic to review the plan. Increment \`critic_cycles\` in \`state.json\` after each critic pass.
    - Include in the prompt: **"This is a no-test workflow. Skip test strategy quality checks. Focus on feasibility, scope clarity, implementation completeness, and codebase grounding."**
-   - Changes required and cycle < 3: return to step 1 with critic feedback.
-   - Changes required and cycle ≥ 3: surface unresolved issues to user and wait for explicit direction.
-4. Use the \`fabys-questions\` skill to verify the plan with the user before proceeding to implementation.
-   - If user requests changes, return to step 1 (invoke fabys-planner) with specific feedback.
-5. Update \`state.json\`. Output: "✓ Stage 1 Complete: Planning." Proceed to Stage 2.
+   - Changes required and cycle < 3: return to step 2 with critic feedback.
+   - Changes required and cycle ≥ 3: set \`status: "awaiting_user"\`, record a \`blocked_reason\`, surface the unresolved issues to the user, and stop.
+5. Before asking the user to confirm the plan, set \`status: "awaiting_user"\` with \`blocked_reason: "plan confirmation required"\`.
+6. Use the \`fabys-questions\` skill to verify the plan with the user before proceeding to implementation.
+   - If the user requests changes, clear the blocked state and return to step 2 with the requested feedback.
+   - If the user approves, update \`state.json\` with \`current_stage: "implementing"\`, \`status: "implementing"\`, \`artifacts.plan\`, and all discovered phase files as \`pending\`.
+7. Output: "✓ Stage 1 Complete: Planning." Proceed to Stage 2.
 
 ## Stage 2: Implementation
 
 1. Process phases sequentially in phase-number order, respecting declared dependencies.
-2. Invoke fabys-implementer **once per phase**. Never run multiple phase implementations concurrently or pass multiple phases to a single invocation.
-   - Include in the prompt: **"This is Standard mode — no tests exist. Implement directly from phase specifications. Skip test validation. Lint validation still applies if a lint skill is available."**
-3. **For each phase**, before invoking the subagent:
-   - Inform the user: "⏳ Starting implementation of Phase [N]: [phase name]"
-4. **For each phase**, immediately after the subagent completes and validation passes:
-   a. Rename the phase file to \`COMPLETE_*\`
-   b. Update \`state.json\` with the phase status
-   c. Inform the user: "✓ Phase [N] complete: [phase name]"
-5. Verify ALL phases are marked \`COMPLETE_*\` before continuing.
-6. Output: "✓ Stage 2 Complete: Implementation."
-7. Use the \`fabys-questions\` skill to ask the user: **"Implementation complete. Would you like a code review before finishing?"**
-  - If yes → proceed to Stage 3.
-  - If no → output success summary and complete the workflow.
+2. Use \`state.json\` to decide the next phase:
+   - resume \`current_phase_file\` if one is already marked \`in_progress\`
+   - otherwise select the next \`pending\` phase file
+3. Before invoking the implementer for a phase, set that phase to \`in_progress\`, set \`current_phase_file\`, keep \`current_stage: "implementing"\`, and inform the user: "⏳ Starting implementation of Phase [N]: [phase name]"
+4. Invoke fabys-implementer **once per phase**. Never run multiple phase implementations concurrently or pass multiple phases to a single invocation.
+   - Include in the prompt: **"This is Standard no-test mode. Implement directly from phase specifications. Required validation is lint. Skip mandatory test validation unless I explicitly ask for tests."**
+5. Immediately after the subagent completes and validation passes:
+   - set the phase status to \`complete\`
+   - clear \`current_phase_file\`
+   - update \`last_completed_action\`
+   - inform the user: "✓ Phase [N] complete: [phase name]"
+6. After all phases are \`complete\`, set \`status: "awaiting_user"\`, \`blocked_reason: "implementation complete; review decision required"\`, and ask: **"Implementation complete. Would you like a code review before finishing?"**
+   - If yes → set \`review_requested: true\`, \`current_stage: "reviewing"\`, clear the blocked state, and proceed to Stage 3.
+   - If no → set \`status: "complete"\`, \`current_stage: "complete"\`, clear the blocked state, and finish with a success summary.
 
 ## Stage 3: Review (optional)
 
-1. Invoke fabys-reviewer for a review against plan and quality standards.
-   - Include in the prompt: **"This is a rapid/no-test workflow. Skip test coverage and test quality checks entirely. Focus on: code quality, security, performance, conventions, and correctness against the plan and phase documents."**
-2. Validate output per Stage 3 rules above.
-3. Handle verdict:
-   - APPROVED: Output success message. Present final summary. Workflow complete.
+1. If \`review_requested\` is not \`true\`, skip this stage.
+2. Set \`status: "reviewing"\` and invoke fabys-reviewer.
+   - Include in the prompt: **"This is a rapid/no-test workflow. Review in no-test mode. Do not require test coverage or passing test runs unless the phase docs explicitly require them. Lint remains in scope. Focus on code quality, security, performance, conventions, and correctness against the plan and phase documents."**
+3. Validate output per Stage 3 rules above.
+4. Handle verdict:
+   - APPROVED: set \`status: "complete"\`, \`current_stage: "complete"\`, store \`artifacts.review\`, and present the final summary.
    - APPROVED WITH RECOMMENDATIONS:
-     - Use the \`fabys-questions\` skill to present recommendations to the user.
-     - If user accepts as APPROVED, proceed as APPROVED.
-     - If user requires changes, determine scope using the same routing rules as CHANGES REQUIRED below.
+     - set \`status: "awaiting_user"\` with a \`blocked_reason\`
+     - use the \`fabys-questions\` skill to present recommendations to the user
+     - if the user accepts as APPROVED, treat it as APPROVED
+     - if the user requires changes, route using the same rules as CHANGES REQUIRED below
    - CHANGES REQUIRED:
-     - If review feedback is specific enough for an existing phase or a localized change, return directly to Stage 2 for the affected phase(s) and pass the reviewer feedback verbatim.
-     - If the feedback reveals broader work that the current phases do not cover, return to Stage 1 with the reviewer findings.
-     - Re-run Stage 3 after rework.
-4. Update \`state.json\`. Output: "✓ Stage 3 Complete: Review — [Verdict]"
+     - if feedback is specific enough for one or more existing phases, set those phases back to \`pending\`, set \`current_stage: "implementing"\`, clear any review-only blocked state, and return to Stage 2 with the reviewer feedback verbatim
+     - if the feedback reveals broader work that the current phases do not cover, set \`current_stage: "planning"\`, clear phase progress only for the affected future work, and return to Stage 1 with the reviewer findings
+     - re-run Stage 3 after rework
+5. Update \`state.json\` before stopping or completing.
 
 </workflow>
 `;

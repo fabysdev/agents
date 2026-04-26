@@ -260,7 +260,7 @@ Requirements:
 - Implementation outline must keep the phase self-contained and executable as written
 - Test strategy must be specific enough for a test-writing or implementation agent to act without re-analyzing
 - Acceptance criteria must be behavior-focused and testable
-- Use \`phase*.md\` file names so downstream agents can detect and rename phases
+- Use \`phase*.md\` file names so downstream agents can discover phases and resume reliably
 
 After writing the files, return a concise summary covering:
 

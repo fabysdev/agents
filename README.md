@@ -137,7 +137,7 @@ The orchestrated workflows use `.plan/<feature-name>/` as their working director
 
 - `plan.md` stores the analyzed request, global decisions, and compact cross-phase manifest
 - `phase*.md` stores the per-phase execution plan
-- `state.json` and `run-log.md` track workflow progress
+- `state.json` tracks workflow progress and resume state
 - `review.md` stores the final review output when a review stage runs
 
 This directory is primarily used by `/tdd` and `/rapid`. `/dev` is the direct path and normally does not need `.plan/` artifacts.
