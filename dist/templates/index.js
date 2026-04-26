@@ -21,7 +21,8 @@ import * as tddSkill from "./skills/tdd.js";
 import * as testConsolidationSkill from "./skills/test-consolidation.js";
 import * as testEngineeringSkill from "./skills/test-engineering.js";
 import * as testSkill from "./skills/test.js";
-export const agents = [analyst, critic, explorer, implementer, planner, rapid, reviewer, tdd, testConsolidator, testEngineer];
+export const agents = [critic, explorer, implementer, planner, rapid, reviewer, tdd, testConsolidator, testEngineer];
+export const allAgents = [analyst, ...agents];
 export const skills = [
     fabysExplorationSkill,
     fabysQuestionsSkill,

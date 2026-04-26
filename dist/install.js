@@ -31,6 +31,7 @@ const FABYS_SKILL_PREFIX = "fabys-";
 const WORKFLOW_SKILL_NAMES = new Set(["dev", "rapid", "tdd"]);
 const MANDATORY_PROJECT_SKILL_NAMES = new Set(["lint", "test"]);
 const OPTIONAL_PROJECT_SKILL_NAMES = new Set(optionalProjectSkills.map(({ name }) => name));
+const RETIRED_AGENT_FILES = ["fabys-analyst.agent.md"];
 export function install({ targetBase, tool, force = false, selectedProjectSkills }) {
     fs.mkdirSync(targetBase, { recursive: true });
     const selectedOptionalProjectSkills = normalizeSelectedProjectSkills(selectedProjectSkills);
@@ -40,6 +41,11 @@ export function install({ targetBase, tool, force = false, selectedProjectSkills
         targetDir: path.join(targetBase, "agents"),
         tool,
         overwrite: true,
+        renameFile: renameAgent
+    });
+    removeRetiredAgentFiles({
+        relativePaths: RETIRED_AGENT_FILES,
+        targetDir: path.join(targetBase, "agents"),
         renameFile: renameAgent
     });
     const fabysSkills = writeTemplates({
@@ -126,5 +132,14 @@ function writeTemplates({ entries, targetDir, tool, overwrite, renameFile }) {
         written += 1;
     }
     return { written, skipped };
+}
+function removeRetiredAgentFiles({ relativePaths, targetDir, renameFile }) {
+    for (const relativePath of relativePaths) {
+        const filename = renameFile ? renameFile(relativePath) : relativePath;
+        const targetPath = path.join(targetDir, filename);
+        if (fs.existsSync(targetPath)) {
+            fs.rmSync(targetPath);
+        }
+    }
 }
 //# sourceMappingURL=install.js.map

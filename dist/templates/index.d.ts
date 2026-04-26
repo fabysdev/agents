@@ -4,4 +4,5 @@ export interface TemplateEntry {
     render: (tool: Tool) => string;
 }
 export declare const agents: TemplateEntry[];
+export declare const allAgents: TemplateEntry[];
 export declare const skills: TemplateEntry[];
