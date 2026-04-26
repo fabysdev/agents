@@ -4,14 +4,34 @@ My opinionated AI workflow for coding.
 
 - Agents for analysis, planning, implementation, review, TDD orchestration, and rapid orchestration
 - Workflow skills for `/tdd`, `/rapid`, and `/dev`
+- Portability skills for exploration and user questions across GitHub Copilot, OpenCode, and Claude Code
 - Role-specific skills for exploration, planning, implementation, review, test engineering, and test consolidation
 - Validation skills for linting and testing
 
 ## Installation
 
 ```bash
-npx github:fabysdev/agents#v0.9.0
+npx github:fabysdev/agents#v0.9.0 --tool copilot
+npx github:fabysdev/agents#v0.9.0 --tool opencode
+npx github:fabysdev/agents#v0.9.0 --tool claude
+npx github:fabysdev/agents#v0.9.0 --tool copilot --force
 ```
+
+If you omit `--tool`, the installer prompts on TTYs and defaults to Copilot in non-interactive environments.
+On TTYs, the installer also shows a checklist for the optional project-specific skills to install. `lint` and `test` are always installed. In non-interactive environments, all optional project-specific skills are installed by default.
+
+Pass `--force` to also overwrite `lint`, `test`, and the selected optional project-specific skills.
+
+Re-running the installer always overwrites agent files, refreshes the shared portability skills (`fabys-exploration`, `fabys-questions`), and refreshes the workflow skills (`dev`, `rapid`, `tdd`).
+`lint`, `test`, and the selected optional project-specific skills are preserved by default and only overwritten with `--force`.
+
+### Supported Targets
+
+| Tool           | Output root  | Agent files                 | Skill files                   |
+| -------------- | ------------ | --------------------------- | ----------------------------- |
+| GitHub Copilot | `.github/`   | `.github/agents/*.agent.md` | `.github/skills/*/SKILL.md`   |
+| OpenCode       | `.opencode/` | `.opencode/agents/*.md`     | `.opencode/skills/*/SKILL.md` |
+| Claude Code    | `.claude/`   | `.claude/agents/*.md`       | `.claude/skills/*/SKILL.md`   |
 
 ### After Installation
 
@@ -19,19 +39,13 @@ The generated files are starting points. Make the skills and instructions match 
 
 ### Lint Skill
 
-- Update the installed lint skill so it runs the actual linting flow for your project, `skills/lint/SKILL.md`.
+- Update the installed lint skill so it runs the actual linting flow for your project under your chosen tool root, `skills/lint/SKILL.md`.
 
 ### Test Skill
 
-- Update the installed test skill so it reflects the real test workflow for your project, `skills/test/SKILL.md`.
+- Update the installed test skill so it reflects the real test workflow for your project under your chosen tool root, `skills/test/SKILL.md`.
 
 ## Project-Specific Instructions
-
-- Keep broader repository guidance in the main instructions file for the tool you chose.
-
-This keeps the installed agents reusable while still giving the tool the local context it needs to behave correctly in your codebase.
-
-### Role-Specific Skills
 
 Each agent loads a matching skill to pick up project-specific conventions. The installed skills are starting-point templates — customize them to describe your project's actual constraints.
 
@@ -46,8 +60,6 @@ Each agent loads a matching skill to pick up project-specific conventions. The i
 
 If a skill is present, the matching agent treats it as authoritative. If it conflicts with generic best practices, the project-specific skill wins.
 
-Customize the skills in the `skills/` directory to match your project. Keep them short, concrete, and role-specific.
-
 ## Model Thinking Effort
 
 Recommended thinking effort settings for the models used in this workflow:
@@ -59,6 +71,17 @@ Recommended thinking effort settings for the models used in this workflow:
 ## Usage
 
 These are the three entrypoints I use.
+
+### Claude Code Operating Model
+
+Claude Code works best here as short-lived top-level sessions with `.plan/<feature-name>/` artifacts as the handoff, not as one long-lived, deeply nested worker tree.
+
+- Install with `--tool claude`.
+- Create one git worktree per feature or bug fix.
+- Start a fresh top-level Claude Code session for each workflow stage you want to run.
+- Use `fabys-tdd` or `fabys-rapid` in that session, and treat `.plan/<feature-name>/state.json` plus the generated plan artifacts as the handoff to the next session.
+- For `/tdd`, keep Stage 3 (Red) and Stage 4 (Green) in the same session because the orchestrator is designed to move straight from Red into Green.
+- For `/rapid`, splitting Expansion, Planning, Implementation, and optional Review into separate sessions is a good default.
 
 ### TDD Workflow
 
@@ -97,7 +120,7 @@ scaffold a new CLI command for syncing templates
 `/dev` is the quickest path when the work is small and you just want the change implemented cleanly with tests and lint handled before finishing.
 
 - Prompt: `/dev <request>`
-- Agent: Copilot `agent` by default, or OpenCode `build`
+- Agent: Copilot `agent` by default, OpenCode `build`, or the equivalent direct small-change flow in your Claude Code session
 - Workflow: direct implementation of the request, update or add tests for every changed file, then run lint and the full test suite
 - Best for: small fixes, narrow refactors, copy changes, and other direct edits that do not need the full orchestrated workflow
 
@@ -125,3 +148,4 @@ This directory is primarily used by `/tdd` and `/rapid`. `/dev` is the direct pa
 - Use `/tdd` when correctness and regression safety matter most
 - Use `/dev` for small direct changes
 - Use `/rapid` when you want structure without the TDD overhead
+- On Claude Code, use one worktree per feature, prefer fresh top-level sessions per workflow stage, and scale parallel work by adding worktrees rather than nesting more workers

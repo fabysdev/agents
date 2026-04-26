@@ -1,6 +1,7 @@
 ---
 name: dev
 description: Implement a feature or fix with emphasis on tests and observability. Use this skill when asked to develop, implement, or make code changes that require proper test coverage.
+disable-model-invocation: true
 argument-hint: "[feature or change to implement]"
 ---
 

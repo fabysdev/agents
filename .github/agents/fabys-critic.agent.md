@@ -48,7 +48,7 @@ You are a Plan Critic Agent. Your sole responsibility is to review implementatio
 
 ## Step 4.5 — User confirmation of warnings (only if WARNINGs exist)
 
-If any WARNINGs were found and preliminary verdict is `APPROVED`, use the `askQuestions` tool to present the warnings to the user and ask whether each should escalate to `NEEDS_REVISION` or be accepted as-is:
+If any WARNINGs were found and preliminary verdict is `APPROVED`, use the `fabys-questions` skill to present the warnings to the user and ask whether each should escalate to `NEEDS_REVISION` or be accepted as-is:
 
 - List each WARNING clearly with the section it applies to
 - Ask the user whether warnings should block the plan or be accepted

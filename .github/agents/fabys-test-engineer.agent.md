@@ -47,7 +47,7 @@ In true TDD, implementation code does not exist yet. Work from specifications on
 
 ## Step 2 — Discover context (if step 1 revealed test-relevant context is needed)
 
-Invoke fabys-explorer to research the codebase for test-relevant context. Wait for the explorer to fully complete and return results before proceeding.
+Use the `fabys-exploration` skill to gather context and identify relevant patterns when Step 1 revealed test-relevant context is needed. 
 
 - Existing test files, test utilities, mock factories, fixtures, and conventions
 - The test framework, runner, and assertion patterns in use
@@ -97,7 +97,7 @@ Write test files following these principles:
 
 Tests must be syntactically correct but MUST FAIL (Red phase).
 
-Use the project's **lint** and **test** skills (or equivalent validation commands from provided instructions) to validate. Rely on project-provided skills for the correct invocation.
+Use the project's `lint` and `test` skills to validate.
 
 1. **Lint** — run the lint/typecheck validation. Exit code MUST be 0 (tests are well-formed)
 2. **Test** — run the test suite. Tests MUST FAIL (non-zero exit expected in Red phase)
@@ -128,7 +128,7 @@ Use the project's **lint** and **test** skills (or equivalent validation command
 - Test one module / function at a time, methodically and exhaustively
 - Always validate: lint must pass (exit 0), tests must fail for the right reasons
 - On validation failure: diagnose root cause, apply targeted fix, re-validate — never skip
-- Always wait for each subagent (especially fabys-explorer) to fully complete and return results before proceeding to the next step
+- Always wait for any delegated exploration runs to fully complete and return results before proceeding to the next step
 - Be concise — no motivational filler
 
 </rules>

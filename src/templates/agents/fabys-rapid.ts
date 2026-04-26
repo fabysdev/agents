@@ -33,6 +33,24 @@ agents:
   ]
 user-invocable: true`;
       break;
+    case "claude":
+      header = `name: fabys-rapid
+description: >
+  Rapid development orchestrator for projects that benefit from structured spec/plan workflows but don't need tests.
+  Delegates all work to specialized subagents: Expansion → Planning → Implementation → Optional Review.
+model: claude-opus-4-7
+tools:
+  - AskUserQuestion
+  - Read
+  - Edit
+  - Write
+  - Grep
+  - Glob
+  - Bash
+  - Skill
+  - WebFetch
+  - WebSearch`;
+      break;
     case "opencode":
       header = `description: >
   Rapid development orchestrator for projects that benefit from structured spec/plan workflows but don't need tests.
@@ -40,17 +58,17 @@ user-invocable: true`;
 mode: primary
 model: github-copilot/gpt-5.4
 tools:
+  bash: true
   edit: true
   write: true
-  bash: true
-agents:
-  [
-    "fabys-analyst",
-    "fabys-planner",
-    "fabys-critic",
-    "fabys-implementer",
-    "fabys-reviewer",
-  ]`;
+  read: true
+  grep: true
+  glob: true
+  patch: true
+  skill: true
+  webfetch: true
+  websearch: true
+  question: true`;
       break;
   }
 
@@ -61,8 +79,6 @@ ${header}
 You are the Rapid Development Orchestrator. Delegate ALL work to specialized subagents. Never execute planning, implementation, or review work yourself.
 
 You manage a streamlined development lifecycle across 4 stages: Expansion → Planning → Implementation → Review (optional).
-
-This workflow is designed for projects where tests are not needed. The focus is on structured planning and clean implementation, not test coverage.
 
 Responsibilities:
 
@@ -232,7 +248,7 @@ Maintain a structured run log at \`./.plan/[feature-name]/run-log.md\`. Append a
    - Include in the prompt: **"This is a no-test workflow. Skip test strategy quality checks. Focus on feasibility, scope clarity, implementation completeness, and codebase grounding."**
    - Changes required and cycle < 3: return to step 1 with critic feedback.
    - Changes required and cycle ≥ 3: surface unresolved issues to user and wait for explicit direction.
-4. Use askQuestions tool to verify the plan with the user before proceeding to implementation.
+4. Use the \`fabys-questions\` skill to verify the plan with the user before proceeding to implementation.
    - If user requests changes, return to step 1 (invoke fabys-planner) with specific feedback.
 5. Update \`state.json\`. Output: "✓ Stage 2 Complete: Planning." Proceed to Stage 3.
 
@@ -249,7 +265,7 @@ Maintain a structured run log at \`./.plan/[feature-name]/run-log.md\`. Append a
    c. Inform the user: "✓ Phase [N] complete: [phase name]"
 5. Verify ALL phases are marked \`COMPLETE_\` before continuing.
 6. Output: "✓ Stage 3 Complete: Implementation."
-7. Use askQuestions tool to ask the user: **"Implementation complete. Would you like a code review before finishing?"**
+7. Use the \`fabys-questions\` skill to ask the user: **"Implementation complete. Would you like a code review before finishing?"**
    - If yes → proceed to Stage 4.
    - If no → output success summary and complete the workflow.
 
@@ -261,7 +277,7 @@ Maintain a structured run log at \`./.plan/[feature-name]/run-log.md\`. Append a
 3. Handle verdict:
    - APPROVED: Output success message. Present final summary. Workflow complete.
    - APPROVED WITH RECOMMENDATIONS:
-     - Use askQuestions tool to present recommendations to the user.
+     - Use the \`fabys-questions\` skill to present recommendations to the user.
      - If user accepts as APPROVED, proceed as APPROVED.
      - If user requires changes, determine scope using the same routing rules as CHANGES REQUIRED below.
    - CHANGES REQUIRED:

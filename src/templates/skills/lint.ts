@@ -11,10 +11,14 @@ export function render(tool: Tool): string {
 description: Lint the project. Use this skill when asked to lint, check code style, fix lint errors, run static analysis, or verify code quality. Use it both for linting the full project and for linting a specific file.
 argument-hint: "[optional: specific file or directory]"`;
       break;
-    case "opencode":
+    case "claude":
       frontmatter = `name: lint
 description: Lint the project. Use this skill when asked to lint, check code style, fix lint errors, run static analysis, or verify code quality. Use it both for linting the full project and for linting a specific file.
-compatibility: opencode`;
+argument-hint: "[optional: specific file or directory]"`;
+      break;
+    case "opencode":
+      frontmatter = `name: lint
+description: Lint the project. Use this skill when asked to lint, check code style, fix lint errors, run static analysis, or verify code quality. Use it both for linting the full project and for linting a specific file.`;
       break;
   }
 
@@ -24,7 +28,7 @@ ${frontmatter}
 
 # Lint
 
-Inspect the repository and infer the best lint command from its scripts, task runners, config files, and language-specific tooling; prefer the narrowest command that matches the user's request and mention any assumption when multiple commands are plausible.
+Inspect the repository and infer the best lint command from its scripts, task runners, config files, and language-specific tooling; prefer the narrowest command that matches the request and mention any assumption when multiple commands are plausible.
 
 ## Steps
 

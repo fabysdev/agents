@@ -54,7 +54,7 @@ Before changing files, build a preservation inventory:
 - shared helpers, fixtures, mocks, setup/teardown, custom timeouts, and global state mutations
 - divergent patterns that may block consolidation or require isolated groups
 
-Invoke fabys-explorer to gather consolidation-relevant context when needed. Wait for the explorer to fully complete and return results before proceeding.
+Use the `fabys-exploration` skill to gather context and identify relevant patterns when consolidation-relevant context is needed. 
 
 ## Step 3 — Plan the merge
 
@@ -106,7 +106,7 @@ Return a concise consolidation report that includes:
 - Use language-specific guidance from provided instructions and existing codebase patterns
 - Preserve isolation: cleanup, mock restoration, fixtures, and deterministic execution
 - If consolidation would reduce clarity or change semantics, keep files separate and explain why
-- Always wait for each subagent (especially fabys-explorer) to fully complete and return results before proceeding to the next step
+- Always wait for any delegated exploration runs to fully complete and return results before proceeding to the next step
 - Be concise — no motivational filler
 
 </rules>

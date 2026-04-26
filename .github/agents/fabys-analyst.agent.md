@@ -35,19 +35,17 @@ Read the user request carefully. Identify:
 
 ## Step 2 — Explore
 
-Invoke the fabys-explorer subagent to gather codebase context. When the request spans multiple independent areas (e.g., frontend + backend, different features, separate repos), launch **2–3 fabys-explorer subagents in parallel** — one per area — to speed up discovery.
+Use the `fabys-exploration` skill to gather context and identify relevant patterns. 
 
-Each fabys-explorer subagent should surface:
+Each exploration pass should surface:
 
 - Analogous existing features to use as implementation templates
 - Relevant files, modules, and entry points
 - Potential blockers or ambiguities grounded in actual code
 
-Wait for all fabys-explorer invocations to fully complete and return their results before proceeding.
-
 ## Step 3 — Clarify (if needed)
 
-Review what the exploration surfaced. If new ambiguities emerged that block writing an accurate spec, use askQuestions tool to resolve them. Then loop back to Step 2 if the answers reveal areas that need further exploration.
+Review what the exploration surfaced. If new ambiguities emerged that block writing an accurate spec, use the `fabys-questions` skill to resolve them. Then loop back to Step 2 if the answers reveal areas that need further exploration.
 
 Keep questions to 1–3. Do not loop more than twice.
 
@@ -63,7 +61,7 @@ Once the picture is clear, synthesize findings into `./.plan/{feature-name}/spec
 - Never reference a component without verifying it exists
 - Be concise — only include necessary information
 - A wrong assumption costs more than one question — always ask. don't make large assumptions.
-- Always wait for each subagent (especially fabys-explorer) to fully complete and return results before proceeding to the next step
+- Always wait for any delegated exploration runs to fully complete and return results before proceeding to the next step
 </rules>
 
 <output_format>

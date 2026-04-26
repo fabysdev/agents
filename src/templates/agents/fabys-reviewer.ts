@@ -28,15 +28,37 @@ tools:
 agents: ["fabys-explorer"]
 user-invocable: false`;
       break;
+    case "claude":
+      header = `name: fabys-reviewer
+description: Code Review & Quality Assurance Agent
+model: claude-opus-4-7
+tools:
+  - Read
+  - Edit
+  - Write
+  - Grep
+  - Glob
+  - Bash
+  - Skill
+  - WebFetch
+  - WebSearch
+user-invocable: false`;
+      break;
     case "opencode":
       header = `description: Code Review & Quality Assurance Agent
 mode: subagent
 model: github-copilot/gpt-5.4
 tools:
+  bash: true
   edit: true
   write: true
-  bash: true
-agents: ["fabys-explorer"]`;
+  read: true
+  grep: true
+  glob: true
+  patch: true
+  skill: true
+  webfetch: true
+  websearch: true`;
       break;
   }
 
@@ -69,7 +91,7 @@ Identify what was implemented:
 
 ## Step 2 — Gather context
 
-Invoke fabys-explorer to understand the surrounding codebase when needed. Wait for the explorer to fully complete and return results before proceeding.
+Use the \`fabys-exploration\` skill to gather context and identify relevant patterns to understand the surrounding codebase when needed. 
 
 - Project conventions, patterns, and idioms
 - How similar features are structured and tested
@@ -129,7 +151,7 @@ Apply OWASP principles and assess for:
 
 ## Step 4 — Validate (mandatory — never skip)
 
-Use the project's **lint** and **test** skills for validation. Skills contain the project-specific commands — rely on them, do not hardcode runner commands.
+Use the project's \`lint\` and \`test\` skills for validation. Always check exit codes and full output.
 
 1. **Lint** — run the lint skill. Exit code MUST be 0.
 2. **Test** — run the test skill. Exit code MUST be 0 and all tests must pass.
@@ -272,7 +294,7 @@ List every issue found. No issues = no entries.
 - Flag only real issues with clear explanations and specific fixes — no false positives, no nitpicking
 - Every issue must have: severity, exact location, description, and actionable recommendation
 - Be objective and constructive — facts over opinions, opportunities over criticisms
-- Always wait for each subagent (especially fabys-explorer) to fully complete and return results before proceeding to the next step
+- Always wait for any delegated exploration runs to fully complete and return results before proceeding to the next step
 - Be concise — no motivational filler, no praise padding
 - Security issues are never optional — always flag, always block
 

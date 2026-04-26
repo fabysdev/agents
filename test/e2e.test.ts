@@ -9,8 +9,16 @@ import {agents, skills} from "../src/templates/index.js";
 
 const REPO_ROOT: string = path.resolve(import.meta.dirname, "..");
 const BIN_PATH: string = path.join(REPO_ROOT, "dist", "cli.js");
+const CLAUDE_MODEL_PATTERN = /model:\s+claude-[\w.-]+/;
 const OPENCODE_MODEL_PATTERN = /model:\s+\S+\/\S+/;
-const COPILOT_SKILL_COUNT = 11;
+const EXPECTED_SKILL_COUNT = 13;
+const EXPECTED_FABYS_SKILL_PATHS: string[] = skills
+  .map((skill) => skill.relativePath)
+  .filter((relativePath) => relativePath.startsWith("fabys-"))
+  .sort();
+const REQUIRED_SKILL_FRONTMATTER_KEYS: string[] = ["name", "description"];
+const SUPPORTED_CLAUDE_SKILL_FRONTMATTER_KEYS: string[] = ["argument-hint", "description", "disable-model-invocation", "name", "user-invocable"];
+const SUPPORTED_TOOLS = ["copilot", "opencode", "claude"] as const;
 
 describe("install script e2e", () => {
   let tempDir: string;
@@ -18,6 +26,7 @@ describe("install script e2e", () => {
   const expectedAgentFiles: string[] = agents.map((a) => a.relativePath).sort();
   const expectedSkillFiles: string[] = skills.map((s) => s.relativePath).sort();
   const expectedOpenCodeAgentFiles: string[] = expectedAgentFiles.map((f) => f.replace(/\.agent\.md$/, ".md")).sort();
+  const expectedClaudeAgentFiles: string[] = expectedAgentFiles.map((f) => f.replace(/\.agent\.md$/, ".md")).sort();
 
   beforeEach((): void => {
     tempDir = fs.mkdtempSync(path.join(os.tmpdir(), "fabysagents-e2e-"));
@@ -35,8 +44,12 @@ describe("install script e2e", () => {
     runInstaller(tempDir, ["--tool", "copilot"]);
 
     // Assert
+    assert.strictEqual(SUPPORTED_TOOLS.length, 3);
     assert.strictEqual(expectedAgentFiles.length, 10);
-    assert.strictEqual(expectedSkillFiles.length, COPILOT_SKILL_COUNT);
+    assert.strictEqual(expectedSkillFiles.length, EXPECTED_SKILL_COUNT);
+    assert.strictEqual(EXPECTED_FABYS_SKILL_PATHS.length, 2);
+    assert.ok(expectedSkillFiles.includes("fabys-exploration/SKILL.md"));
+    assert.ok(expectedSkillFiles.includes("fabys-questions/SKILL.md"));
 
     assert.deepStrictEqual(collectRelativeFiles(path.join(targetGithubPath, "agents")), expectedAgentFiles);
     assert.deepStrictEqual(collectRelativeFiles(path.join(targetGithubPath, "skills")), expectedSkillFiles);
@@ -97,12 +110,14 @@ describe("install script e2e", () => {
     assert.strictEqual(fs.readFileSync(agentPath, "utf8"), originalAgentContent);
   });
 
-  it("preserves existing skill files on re-run", (): void => {
+  it("preserves project-specific skills and refreshes shared skills on re-run", (): void => {
     // Arrange
     runInstaller(tempDir, ["--tool", "copilot"]);
     const customSkillContents: Map<string, string> = new Map([
+      ["dev/SKILL.md", "---\nname: dev\n---\nStale workflow instructions.\n"],
       ["exploration/SKILL.md", "---\nname: custom-exploration\n---\nPrefer ripgrep and skip generated directories.\n"],
-      ["test/SKILL.md", "---\nname: custom-test\n---\nRun the repository test workflow.\n"]
+      ["test/SKILL.md", "---\nname: custom-test\n---\nRun the repository test workflow.\n"],
+      ["fabys-exploration/SKILL.md", "---\nname: fabys-exploration\n---\nStale shared exploration rules.\n"]
     ]);
 
     for (const [relativePath, content] of customSkillContents) {
@@ -113,9 +128,36 @@ describe("install script e2e", () => {
     runInstaller(tempDir, ["--tool", "copilot"]);
 
     // Assert
-    for (const [relativePath, content] of customSkillContents) {
-      assert.strictEqual(fs.readFileSync(path.join(tempDir, ".github", "skills", relativePath), "utf8"), content);
-    }
+    assert.strictEqual(fs.readFileSync(path.join(tempDir, ".github", "skills", "dev", "SKILL.md"), "utf8"), skills.find((skill) => skill.relativePath === "dev/SKILL.md")!.render("copilot"));
+    assert.strictEqual(fs.readFileSync(path.join(tempDir, ".github", "skills", "exploration", "SKILL.md"), "utf8"), customSkillContents.get("exploration/SKILL.md"));
+    assert.strictEqual(fs.readFileSync(path.join(tempDir, ".github", "skills", "test", "SKILL.md"), "utf8"), customSkillContents.get("test/SKILL.md"));
+    assert.strictEqual(
+      fs.readFileSync(path.join(tempDir, ".github", "skills", "fabys-exploration", "SKILL.md"), "utf8"),
+      skills.find((skill) => skill.relativePath === "fabys-exploration/SKILL.md")!.render("copilot")
+    );
+  });
+
+  it("force overwrites selected project skills on re-run", (): void => {
+    // Arrange
+    runInstaller(tempDir, ["--tool", "copilot"]);
+    const customLintContent = "---\nname: lint\n---\nCustom lint workflow.\n";
+    const customExplorationContent = "---\nname: exploration\n---\nCustom exploration workflow.\n";
+
+    fs.writeFileSync(path.join(tempDir, ".github", "skills", "lint", "SKILL.md"), customLintContent);
+    fs.writeFileSync(path.join(tempDir, ".github", "skills", "exploration", "SKILL.md"), customExplorationContent);
+
+    // Act
+    runInstaller(tempDir, ["--force", "--tool", "copilot"]);
+
+    // Assert
+    assert.strictEqual(
+      fs.readFileSync(path.join(tempDir, ".github", "skills", "lint", "SKILL.md"), "utf8"),
+      skills.find((skill) => skill.relativePath === "lint/SKILL.md")!.render("copilot")
+    );
+    assert.strictEqual(
+      fs.readFileSync(path.join(tempDir, ".github", "skills", "exploration", "SKILL.md"), "utf8"),
+      skills.find((skill) => skill.relativePath === "exploration/SKILL.md")!.render("copilot")
+    );
   });
 
   it("exits with code 0", (): void => {
@@ -229,6 +271,117 @@ describe("install script e2e", () => {
     });
   });
 
+  describe("install --tool claude", () => {
+    it("fresh install writes agents and skills into .claude/", (): void => {
+      // Arrange
+      const targetClaudePath: string = path.join(tempDir, ".claude");
+
+      // Act
+      runInstaller(tempDir, ["--tool", "claude"]);
+
+      // Assert
+      assert.deepStrictEqual(collectRelativeFiles(path.join(targetClaudePath, "agents")), expectedClaudeAgentFiles);
+      assert.deepStrictEqual(collectRelativeFiles(path.join(targetClaudePath, "skills")), expectedSkillFiles);
+
+      for (const relativePath of expectedClaudeAgentFiles) {
+        assertStartsWithYamlFrontmatter(path.join(targetClaudePath, "agents", relativePath));
+      }
+
+      for (const entry of skills) {
+        assert.strictEqual(fs.readFileSync(path.join(targetClaudePath, "skills", entry.relativePath), "utf8"), entry.render("claude"));
+      }
+    });
+
+    it("claude skill headers use only supported metadata keys", (): void => {
+      // Arrange
+      const targetClaudePath: string = path.join(tempDir, ".claude");
+
+      // Act
+      runInstaller(tempDir, ["--tool", "claude"]);
+
+      // Assert
+      for (const entry of skills) {
+        const skillPath: string = path.join(targetClaudePath, "skills", entry.relativePath);
+
+        assertSupportedFrontmatterKeys(readFrontmatterKeys(skillPath), SUPPORTED_CLAUDE_SKILL_FRONTMATTER_KEYS);
+      }
+    });
+
+    it("agent filenames use .md extension", (): void => {
+      // Arrange
+      const targetClaudePath: string = path.join(tempDir, ".claude");
+
+      // Act
+      runInstaller(tempDir, ["--tool", "claude"]);
+
+      // Assert
+      const installedAgentFiles: string[] = collectRelativeFiles(path.join(targetClaudePath, "agents"));
+
+      for (const relativePath of installedAgentFiles) {
+        assert.match(relativePath, /\.md$/);
+        assert.ok(!relativePath.endsWith(".agent.md"));
+      }
+    });
+
+    it("at least one agent has claude frontmatter", (): void => {
+      // Arrange
+      const targetClaudePath: string = path.join(tempDir, ".claude");
+
+      // Act
+      runInstaller(tempDir, ["--tool", "claude"]);
+
+      // Assert
+      const installedAgentFiles: string[] = collectRelativeFiles(path.join(targetClaudePath, "agents"));
+      const agentHeaders: string[] = installedAgentFiles.map((relativePath) => readAgentHeader(path.join(targetClaudePath, "agents", relativePath)));
+
+      assert.ok(agentHeaders.some((header) => CLAUDE_MODEL_PATTERN.test(header)));
+    });
+
+    it("stdout matches format like Installed for claude:", (): void => {
+      // Act
+      const stdout: string = runInstaller(tempDir, ["--tool", "claude"]);
+
+      // Assert
+      assert.match(stdout, new RegExp(`Installed\\s+for\\s+claude:\\s+${agents.length}\\s+agents,\\s+${skills.length}\\s+skills\\s+\\(0\\s+skipped existing\\)`));
+    });
+
+    it("agents are overwritten on re-run", (): void => {
+      // Arrange
+      const targetClaudePath: string = path.join(tempDir, ".claude");
+
+      runInstaller(tempDir, ["--tool", "claude"]);
+      const installedAgentFiles: string[] = collectRelativeFiles(path.join(targetClaudePath, "agents"));
+      const agentPath: string = path.join(targetClaudePath, "agents", installedAgentFiles[0]);
+      const originalAgentContent: string = fs.readFileSync(agentPath, "utf8");
+
+      fs.writeFileSync(agentPath, "MODIFIED CLAUDE AGENT CONTENT\n");
+
+      // Act
+      runInstaller(tempDir, ["--tool", "claude"]);
+
+      // Assert
+      assert.strictEqual(fs.readFileSync(agentPath, "utf8"), originalAgentContent);
+      assert.match(readAgentHeader(agentPath), CLAUDE_MODEL_PATTERN);
+    });
+
+    it("fabys skills are refreshed on re-run", (): void => {
+      // Arrange
+      const targetClaudePath: string = path.join(tempDir, ".claude");
+
+      runInstaller(tempDir, ["--tool", "claude"]);
+      const skillPath: string = path.join(targetClaudePath, "skills", "fabys-questions", "SKILL.md");
+      const customSkillContent: string = "---\nname: fabys-questions\ndescription: Project-specific questions skill\nuser-invocable: false\n---\nAsk only when the answer changes scope.\n";
+
+      fs.writeFileSync(skillPath, customSkillContent);
+
+      // Act
+      runInstaller(tempDir, ["--tool", "claude"]);
+
+      // Assert
+      assert.strictEqual(fs.readFileSync(skillPath, "utf8"), skills.find((skill) => skill.relativePath === "fabys-questions/SKILL.md")!.render("claude"));
+    });
+  });
+
   describe("install --tool errors", () => {
     it("--tool invalid exits non-zero", (): void => {
       // Arrange
@@ -280,6 +433,31 @@ function readAgentHeader(filePath: string): string {
   }
 
   return headerMatch[1];
+}
+
+function readFrontmatterKeys(filePath: string): string[] {
+  return readAgentHeader(filePath)
+    .split("\n")
+    .filter(Boolean)
+    .map((line) => {
+      const separatorIndex = line.indexOf(":");
+
+      if (separatorIndex === -1) {
+        throw new Error(`Expected frontmatter key/value line in ${filePath}: ${line}`);
+      }
+
+      return line.slice(0, separatorIndex);
+    });
+}
+
+function assertSupportedFrontmatterKeys(actualKeys: string[], supportedKeys: string[]): void {
+  for (const requiredKey of REQUIRED_SKILL_FRONTMATTER_KEYS) {
+    assert.ok(actualKeys.includes(requiredKey), `Expected frontmatter key: ${requiredKey}`);
+  }
+
+  for (const actualKey of actualKeys) {
+    assert.ok(supportedKeys.includes(actualKey), `Unsupported frontmatter key: ${actualKey}`);
+  }
 }
 
 function assertStartsWithYamlFrontmatter(filePath: string): void {

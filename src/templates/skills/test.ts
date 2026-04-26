@@ -11,10 +11,14 @@ export function render(tool: Tool): string {
 description: Run the project test suite. Use this skill when asked to run tests, check if tests pass, verify test results, or confirm nothing is broken after a code change. Use it both for running the full suite and for running a specific test file or test case.
 argument-hint: "[optional: specific test file or test name]"`;
       break;
-    case "opencode":
+    case "claude":
       frontmatter = `name: test
 description: Run the project test suite. Use this skill when asked to run tests, check if tests pass, verify test results, or confirm nothing is broken after a code change. Use it both for running the full suite and for running a specific test file or test case.
-compatibility: opencode`;
+argument-hint: "[optional: specific test file or test name]"`;
+      break;
+    case "opencode":
+      frontmatter = `name: test
+description: Run the project test suite. Use this skill when asked to run tests, check if tests pass, verify test results, or confirm nothing is broken after a code change. Use it both for running the full suite and for running a specific test file or test case.`;
       break;
   }
 

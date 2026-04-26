@@ -11,10 +11,14 @@ export function render(tool: Tool): string {
 description: Project-specific review standards. Use this skill when reviewing code to apply project review rules that override generic review heuristics.
 user-invocable: false`;
       break;
+    case "claude":
+      frontmatter = `name: review
+description: Project-specific review standards. Use this skill when reviewing code to apply project review rules that override generic review heuristics.
+user-invocable: false`;
+      break;
     case "opencode":
       frontmatter = `name: review
 description: Project-specific review standards. Use this skill when reviewing code to apply project review rules that override generic review heuristics.
-compatibility: opencode
 user-invocable: false`;
       break;
   }

@@ -28,15 +28,39 @@ tools:
 agents: ["fabys-explorer"]
 user-invocable: false`;
       break;
+    case "claude":
+      header = `name: fabys-planner
+description: Planner agent creates plan.md and phase files with explicit test strategies.
+model: claude-opus-4-7
+tools:
+  - AskUserQuestion
+  - Read
+  - Edit
+  - Write
+  - Grep
+  - Glob
+  - Bash
+  - Skill
+  - WebFetch
+  - WebSearch
+user-invocable: false`;
+      break;
     case "opencode":
       header = `description: Planner agent creates plan.md and phase files with explicit test strategies.
 mode: subagent
 model: github-copilot/gpt-5.4
 tools:
+  bash: true
   edit: true
   write: true
-  bash: true
-agents: ["fabys-explorer"]`;
+  read: true
+  grep: true
+  glob: true
+  patch: true
+  skill: true
+  webfetch: true
+  websearch: true
+  question: true`;
       break;
   }
 
@@ -70,22 +94,20 @@ Read the request and any existing planning artifacts, especially \`./.plan/{feat
 
 ## Step 2 — Explore
 
-Invoke the fabys-explorer subagent to gather codebase context identified in Step 1. When the request spans multiple independent areas (e.g., frontend + backend, different features, separate repos), launch **2–3 fabys-explorer subagents in parallel** — one per area — to speed up discovery.
+Use the \`fabys-exploration\` skill to gather context and identify relevant patterns. 
 
-Each fabys-explorer subagent should surface:
+Each exploration pass should surface:
 
 - analogous implementations to reuse
 - relevant files, entry points, functions, types, and interfaces
 - existing tests, test helpers, fixtures, and mock seams
 - technical constraints, risks, and unanswered questions grounded in code
 
-Wait for all fabys-explorer invocations to fully complete and return their results before proceeding.
-
 Use context7 when library or framework behavior affects the plan.
 
 ### Exploration checklists
 
-Guide each explorer run with these categories.
+Guide each exploration pass with these categories.
 
 **Architecture & patterns:**
 
@@ -123,7 +145,7 @@ Guide each explorer run with these categories.
 
 ## Step 3 — Clarify (optional)
 
-If key ambiguity remains after exploration, use askQuestions tool to clarify with the user.
+If key ambiguity remains after exploration, use the \`fabys-questions\` skill to clarify with the user.
 
 - Ask 1-3 concise questions.
 - Only ask about decisions that materially change the plan.
@@ -171,7 +193,7 @@ Before finishing, verify:
 - When explicitly instructed to preserve existing phases, never rewrite, renumber, or delete them; add only supplemental phases and update \`plan.md\` accordingly
 - Minimize code blocks in plans — describe changes conceptually and reference existing patterns. Brief examples are acceptable only for configuration files.
 - Plans must be detailed enough for a lower-tier model (e.g., Haiku/Sonnet-class) to implement without re-analyzing the codebase — leave no ambiguity in implementation steps
-- Always wait for each subagent (especially fabys-explorer) to fully complete and return results before proceeding to the next step
+- Always wait for any delegated exploration runs to fully complete and return results before proceeding to the next step
 
 </rules>
 
