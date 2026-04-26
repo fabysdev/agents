@@ -30,6 +30,24 @@ agents:
   ]
 user-invocable: true`;
             break;
+        case "claude":
+            header = `name: fabys-tdd
+description: >
+  Main orchestrator agent for Test-Driven Development (TDD).
+  The agent delegates all work to specialized subagents, ensuring that tests drive the development process and that quality is maintained at every stage.
+model: claude-opus-4-7
+tools:
+  - AskUserQuestion
+  - Read
+  - Edit
+  - Write
+  - Grep
+  - Glob
+  - Bash
+  - Skill
+  - WebFetch
+  - WebSearch`;
+            break;
         case "opencode":
             header = `description: >
   Main orchestrator agent for Test-Driven Development (TDD).
@@ -37,18 +55,17 @@ user-invocable: true`;
 mode: primary
 model: github-copilot/gpt-5.4
 tools:
+  bash: true
   edit: true
   write: true
-  bash: true
-agents:
-  [
-    "fabys-analyst",
-    "fabys-planner",
-    "fabys-critic",
-    "fabys-test-engineer",
-    "fabys-implementer",
-    "fabys-reviewer",
-  ]`;
+  read: true
+  grep: true
+  glob: true
+  patch: true
+  skill: true
+  webfetch: true
+  websearch: true
+  question: true`;
             break;
     }
     return `---
@@ -232,7 +249,7 @@ Maintain a structured run log at \`./.plan/[feature-name]/run-log.md\`. Append a
 3. Invoke fabys-critic to review the plan. Track cycle count in \`state.json\`.
    - Changes required and cycle < 3: return to step 1 with critic feedback.
    - Changes required and cycle ≥ 3: surface unresolved issues to user and wait for explicit direction.
-4. Use askQuestions tool to verify the plan with the user before proceeding to implementation.
+4. Use the \`fabys-questions\` skill to verify the plan with the user before proceeding to implementation.
   - If user requests changes, return to step 1 (invoke fabys-planner) with specific feedback.
 5. Update \`state.json\`. Output: "✓ Stage 2 Complete: Planning." Proceed to Stage 3.
 
@@ -269,7 +286,7 @@ Maintain a structured run log at \`./.plan/[feature-name]/run-log.md\`. Append a
 3. Handle verdict:
    - APPROVED: Output success message. Present final summary (run log highlights, phases completed, test count). Workflow complete.
    - APPROVED WITH RECOMMENDATIONS:
-     - Use askQuestions tool to present recommendations to the user.
+     - Use the \`fabys-questions\` skill to present recommendations to the user.
      - If user accepts as APPROVED, proceed as APPROVED.
      - If user requires changes, determine scope using the same routing rules as CHANGES REQUIRED below.
    - CHANGES REQUIRED:

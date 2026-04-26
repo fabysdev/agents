@@ -1,4 +1,4 @@
-export type Tool = "copilot" | "opencode";
+export type Tool = "copilot" | "opencode" | "claude";
 export interface TemplateEntry {
     relativePath: string;
     render: (tool: Tool) => string;

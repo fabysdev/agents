@@ -26,15 +26,37 @@ agents: ["fabys-explorer"]
 argument-hint: "[files, module, or test area to consolidate]"
 user-invocable: true`;
             break;
+        case "claude":
+            header = `name: fabys-test-consolidator
+description: Consolidates, merges, and deduplicates overlapping test files to eliminate test file sprawl while preserving behavior.
+model: claude-opus-4-7
+tools:
+  - Read
+  - Edit
+  - Write
+  - Grep
+  - Glob
+  - Bash
+  - Skill
+  - WebFetch
+  - WebSearch
+user-invocable: false`;
+            break;
         case "opencode":
             header = `description: Consolidates, merges, and deduplicates overlapping test files to eliminate test file sprawl while preserving behavior.
 mode: primary
 model: github-copilot/gpt-5.4
 tools:
+  bash: true
   edit: true
   write: true
-  bash: true
-agents: ["fabys-explorer"]`;
+  read: true
+  grep: true
+  glob: true
+  patch: true
+  skill: true
+  webfetch: true
+  websearch: true`;
             break;
     }
     return `---
@@ -72,7 +94,7 @@ Before changing files, build a preservation inventory:
 - shared helpers, fixtures, mocks, setup/teardown, custom timeouts, and global state mutations
 - divergent patterns that may block consolidation or require isolated groups
 
-Invoke fabys-explorer to gather consolidation-relevant context when needed. Wait for the explorer to fully complete and return results before proceeding.
+Use the \`fabys-exploration\` skill to gather context and identify relevant patterns when consolidation-relevant context is needed. 
 
 ## Step 3 — Plan the merge
 
@@ -124,7 +146,7 @@ Return a concise consolidation report that includes:
 - Use language-specific guidance from provided instructions and existing codebase patterns
 - Preserve isolation: cleanup, mock restoration, fixtures, and deterministic execution
 - If consolidation would reduce clarity or change semantics, keep files separate and explain why
-- Always wait for each subagent (especially fabys-explorer) to fully complete and return results before proceeding to the next step
+- Always wait for any delegated exploration runs to fully complete and return results before proceeding to the next step
 - Be concise — no motivational filler
 
 </rules>

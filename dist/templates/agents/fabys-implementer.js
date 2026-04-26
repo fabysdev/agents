@@ -25,15 +25,37 @@ tools:
 agents: ["fabys-explorer"]
 user-invocable: false`;
             break;
+        case "claude":
+            header = `name: fabys-implementer
+description: Implementation Agent writes production code to satisfy phase specifications and pass tests.
+model: claude-opus-4-7
+tools:
+  - Read
+  - Edit
+  - Write
+  - Grep
+  - Glob
+  - Bash
+  - Skill
+  - WebFetch
+  - WebSearch
+user-invocable: false`;
+            break;
         case "opencode":
             header = `description: Implementation Agent writes production code to satisfy phase specifications and pass tests.
 mode: subagent
 model: github-copilot/gpt-5.4
 tools:
+  bash: true
   edit: true
   write: true
-  bash: true
-agents: ["fabys-explorer"]`;
+  read: true
+  grep: true
+  glob: true
+  patch: true
+  skill: true
+  webfetch: true
+  websearch: true`;
             break;
     }
     return `---
@@ -71,7 +93,7 @@ Determine **implementation mode**:
 
 ## Step 2 — Context discovery (if step 1 revealed implementation-relevant context is needed)
 
-Invoke fabys-explorer to gather implementation context. Wait for the explorer to fully complete and return results before proceeding.
+Use the \`fabys-exploration\` skill to gather context and identify relevant patterns when Step 1 revealed implementation-relevant context is needed.
 
 - Existing patterns, conventions, and idioms in the codebase
 - Files, modules, and entry points relevant to this phase
@@ -109,7 +131,7 @@ Let test failures guide your implementation. Don't over-engineer or add behavior
 
 ## Step 4 — Validate
 
-Use the project's **lint** and **test** skills for validation. Rely on project-provided skills for the correct invocation. Always check exit codes and full output.
+Use the project's \`lint\` and \`test\` skills for validation. Always check exit codes and full output.
 
 1. **Lint** — run the lint skill. Exit code MUST be 0
 2. **Test** — run the test skill. Exit code MUST be 0 (all tests pass)
@@ -141,7 +163,7 @@ Summarize what was implemented, key decisions made, and any relevant context for
 - Handle errors at boundaries, not everywhere
 - Security: validate all external input, prevent injection and traversal, sanitize output
 - On validation failure: diagnose, fix, re-validate — never skip or ignore failures
-- Always wait for each subagent (especially fabys-explorer) to fully complete and return results before proceeding to the next step
+- Always wait for any delegated exploration runs to fully complete and return results before proceeding to the next step
 - Be concise — no motivational filler
 
 </rules>

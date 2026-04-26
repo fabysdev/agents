@@ -20,12 +20,32 @@ tools:
   ]
 user-invocable: false`;
             break;
+        case "claude":
+            header = `name: fabys-explorer
+description: Exploration agent specialized in codebase analysis
+model: claude-sonnet-4-6
+tools:
+  - Read
+  - Bash
+  - Grep
+  - Glob
+  - Skill
+  - WebFetch
+  - WebSearch
+user-invocable: false`;
+            break;
         case "opencode":
             header = `description: Exploration agent specialized in codebase analysis
 mode: subagent
-model: github-copilot/gpt-5.4
+model: github-copilot/claude-haiku-4.5
 tools:
-  bash: true`;
+  bash: true
+  read: true
+  grep: true
+  glob: true
+  skill: true
+  webfetch: true
+  websearch: true`;
             break;
     }
     return `---

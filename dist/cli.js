@@ -1,70 +1,118 @@
 #!/usr/bin/env node
 import path from "node:path";
-import { createInterface } from "node:readline";
-import { install } from "./install.js";
-const TOOL_PROMPT = "Which AI tool do you use?\n  1. GitHub Copilot\n  2. OpenCode\n> ";
-const INVALID_TOOL_PROMPT = `Invalid selection. Enter 1, 2, copilot, or opencode.\n${TOOL_PROMPT}`;
+import { checkbox, select } from "@inquirer/prompts";
+import { install, optionalProjectSkills } from "./install.js";
+const TOOL_PROMPT = "Which AI tool do you use?";
+const PROJECT_SKILL_PROMPT = "Select project-specific skills to install. lint and test are always installed.";
+function isTool(value) {
+    return value === "copilot" || value === "opencode" || value === "claude";
+}
 export function parseArgs(argv) {
     const toolIndex = argv.indexOf("--tool");
+    const force = argv.includes("--force");
     if (toolIndex === -1) {
-        return { tool: undefined };
+        return { force, tool: undefined };
     }
     const value = argv[toolIndex + 1];
     if (value === undefined) {
-        throw new Error('--tool requires a value: "copilot" or "opencode"');
+        throw new Error('--tool requires a value: "copilot", "opencode", or "claude"');
     }
-    if (value !== "copilot" && value !== "opencode") {
-        throw new Error(`Invalid tool: ${value}. Use "copilot" or "opencode".`);
+    if (!isTool(value)) {
+        throw new Error(`Invalid tool: ${value}. Use "copilot", "opencode", or "claude".`);
     }
-    return { tool: value };
+    return { force, tool: value };
 }
-export async function promptForTool() {
-    const readline = createInterface({
-        input: process.stdin,
-        output: process.stdout
+export async function promptForTool(options = {}) {
+    const prompt = options.selectPrompt ?? select;
+    return prompt({
+        message: TOOL_PROMPT,
+        choices: [
+            {
+                name: "GitHub Copilot",
+                value: "copilot",
+                description: "Install agents and skills under .github/"
+            },
+            {
+                name: "OpenCode",
+                value: "opencode",
+                description: "Install agents and skills under .opencode/"
+            },
+            {
+                name: "Claude Code",
+                value: "claude",
+                description: "Install agents and skills under .claude/"
+            }
+        ],
+        pageSize: 3
+    }, {
+        clearPromptOnDone: true,
+        input: options.input ?? process.stdin,
+        output: options.output ?? process.stdout
     });
-    try {
-        const firstSelection = parseToolSelection(await askQuestion(readline, TOOL_PROMPT));
-        if (firstSelection !== undefined) {
-            return firstSelection;
-        }
-        const secondSelection = parseToolSelection(await askQuestion(readline, INVALID_TOOL_PROMPT));
-        return secondSelection ?? "copilot";
-    }
-    finally {
-        readline.close();
-    }
 }
-export async function determineTool(argv) {
+export async function determineTool(argv, options = {}) {
     const { tool } = parseArgs(argv);
     if (tool !== undefined) {
         return tool;
     }
-    if (process.stdin.isTTY === true) {
-        return promptForTool();
+    const input = (options.input ?? process.stdin);
+    const output = (options.output ?? process.stdout);
+    if (input.isTTY === true && output.isTTY === true) {
+        return promptForTool({
+            input,
+            output,
+            selectPrompt: options.selectPrompt
+        });
     }
     return "copilot";
 }
+export async function promptForProjectSkills(options = {}) {
+    const prompt = options.checkboxPrompt ?? checkbox;
+    const selectedSkills = await prompt({
+        message: PROJECT_SKILL_PROMPT,
+        choices: optionalProjectSkills.map((skill) => ({
+            name: skill.name,
+            value: skill.name,
+            description: skill.description,
+            checked: true
+        })),
+        pageSize: optionalProjectSkills.length
+    }, {
+        clearPromptOnDone: true,
+        input: options.input ?? process.stdin,
+        output: options.output ?? process.stdout
+    });
+    return [...selectedSkills];
+}
+export async function determineProjectSkills(options = {}) {
+    const input = (options.input ?? process.stdin);
+    const output = (options.output ?? process.stdout);
+    if (input.isTTY === true && output.isTTY === true) {
+        return promptForProjectSkills({
+            checkboxPrompt: options.checkboxPrompt,
+            input,
+            output
+        });
+    }
+    return optionalProjectSkills.map(({ name }) => name);
+}
 export async function runCli() {
+    const { force } = parseArgs(process.argv);
     const tool = await determineTool(process.argv);
-    const targetBase = path.join(process.cwd(), tool === "copilot" ? ".github" : ".opencode");
-    const result = install({ targetBase, tool });
+    const selectedProjectSkills = await determineProjectSkills();
+    const targetBase = path.join(process.cwd(), getTargetDirectory(tool));
+    const result = install({ force, selectedProjectSkills, targetBase, tool });
     process.stdout.write(`Installed for ${tool}: ${result.agents} agents, ${result.skillsWritten} skills (${result.skillsSkipped} skipped existing)\n`);
 }
-function askQuestion(readline, prompt) {
-    return new Promise((resolve) => {
-        readline.question(prompt, resolve);
-    });
-}
-function parseToolSelection(value) {
-    const normalizedValue = value.trim().toLowerCase();
-    if (normalizedValue === "1" || normalizedValue === "copilot") {
-        return "copilot";
+function getTargetDirectory(tool) {
+    switch (tool) {
+        case "copilot":
+            return ".github";
+        case "opencode":
+            return ".opencode";
+        case "claude":
+            return ".claude";
     }
-    if (normalizedValue === "2" || normalizedValue === "opencode") {
-        return "opencode";
-    }
-    return undefined;
 }
 if (import.meta.main) {
     runCli().catch((error) => {

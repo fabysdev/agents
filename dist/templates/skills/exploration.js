@@ -7,10 +7,14 @@ export function render(tool) {
 description: Project-specific exploration conventions. Use this skill when exploring the codebase to understand search priorities, exclusions, and discovery hints.
 user-invocable: false`;
             break;
+        case "claude":
+            frontmatter = `name: exploration
+description: Project-specific exploration conventions. Use this skill when exploring the codebase to understand search priorities, exclusions, and discovery hints.
+user-invocable: false`;
+            break;
         case "opencode":
             frontmatter = `name: exploration
 description: Project-specific exploration conventions. Use this skill when exploring the codebase to understand search priorities, exclusions, and discovery hints.
-compatibility: opencode
 user-invocable: false`;
             break;
     }

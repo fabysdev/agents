@@ -8,6 +8,8 @@ import * as reviewer from "./agents/fabys-reviewer.js";
 import * as tdd from "./agents/fabys-tdd.js";
 import * as testConsolidator from "./agents/fabys-test-consolidator.js";
 import * as testEngineer from "./agents/fabys-test-engineer.js";
+import * as fabysExplorationSkill from "./skills/fabys-exploration.js";
+import * as fabysQuestionsSkill from "./skills/fabys-questions.js";
 import * as devSkill from "./skills/dev.js";
 import * as explorationSkill from "./skills/exploration.js";
 import * as implementationSkill from "./skills/implementation.js";
@@ -21,6 +23,8 @@ import * as testEngineeringSkill from "./skills/test-engineering.js";
 import * as testSkill from "./skills/test.js";
 export const agents = [analyst, critic, explorer, implementer, planner, rapid, reviewer, tdd, testConsolidator, testEngineer];
 export const skills = [
+    fabysExplorationSkill,
+    fabysQuestionsSkill,
     devSkill,
     explorationSkill,
     implementationSkill,

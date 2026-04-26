@@ -7,10 +7,14 @@ export function render(tool) {
 description: Project-specific planning conventions. Use this skill when creating implementation plans to apply project constraints, phase structure, and quality bars.
 user-invocable: false`;
             break;
+        case "claude":
+            frontmatter = `name: planning
+description: Project-specific planning conventions. Use this skill when creating implementation plans to apply project constraints, phase structure, and quality bars.
+user-invocable: false`;
+            break;
         case "opencode":
             frontmatter = `name: planning
 description: Project-specific planning conventions. Use this skill when creating implementation plans to apply project constraints, phase structure, and quality bars.
-compatibility: opencode
 user-invocable: false`;
             break;
     }
