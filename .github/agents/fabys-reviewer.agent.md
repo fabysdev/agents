@@ -38,7 +38,7 @@ You are a Review Agent. Your sole responsibility is to verify that implemented c
 
 Identify what was implemented:
 
-- Read all relevant plan/phase documents
+- Read `plan.md` for global decisions and the relevant `phase*.md` files for execution detail
 - Read test files and test summaries
 - Identify all modified or created files
 - Understand feature scope and architecture decisions

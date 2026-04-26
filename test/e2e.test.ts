@@ -45,11 +45,12 @@ describe("install script e2e", () => {
 
     // Assert
     assert.strictEqual(SUPPORTED_TOOLS.length, 3);
-    assert.strictEqual(expectedAgentFiles.length, 10);
+    assert.strictEqual(expectedAgentFiles.length, 9);
     assert.strictEqual(expectedSkillFiles.length, EXPECTED_SKILL_COUNT);
     assert.strictEqual(EXPECTED_FABYS_SKILL_PATHS.length, 2);
     assert.ok(expectedSkillFiles.includes("fabys-exploration/SKILL.md"));
     assert.ok(expectedSkillFiles.includes("fabys-questions/SKILL.md"));
+    assert.ok(!expectedAgentFiles.includes("fabys-analyst.agent.md"));
 
     assert.deepStrictEqual(collectRelativeFiles(path.join(targetGithubPath, "agents")), expectedAgentFiles);
     assert.deepStrictEqual(collectRelativeFiles(path.join(targetGithubPath, "skills")), expectedSkillFiles);

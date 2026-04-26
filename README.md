@@ -2,7 +2,7 @@
 
 My opinionated AI workflow for coding.
 
-- Agents for analysis, planning, implementation, review, TDD orchestration, and rapid orchestration
+- Agents for planning, implementation, review, TDD orchestration, and rapid orchestration
 - Workflow skills for `/tdd`, `/rapid`, and `/dev`
 - Portability skills for exploration and user questions across GitHub Copilot, OpenCode, and Claude Code
 - Role-specific skills for exploration, planning, implementation, review, test engineering, and test consolidation
@@ -80,16 +80,16 @@ Claude Code works best here as short-lived top-level sessions with `.plan/<featu
 - Create one git worktree per feature or bug fix.
 - Start a fresh top-level Claude Code session for each workflow stage you want to run.
 - Use `fabys-tdd` or `fabys-rapid` in that session, and treat `.plan/<feature-name>/state.json` plus the generated plan artifacts as the handoff to the next session.
-- For `/tdd`, keep Stage 3 (Red) and Stage 4 (Green) in the same session because the orchestrator is designed to move straight from Red into Green.
-- For `/rapid`, splitting Expansion, Planning, Implementation, and optional Review into separate sessions is a good default.
+- For `/tdd`, keep Stage 2 (Implementation) in the same session because the orchestrator is designed to run Red then Green for each phase before moving to the next one.
+- For `/rapid`, splitting Planning, Implementation, and optional Review into separate sessions is a good default.
 
 ### TDD Workflow
 
-This uses the full orchestrated TDD workflow. The agent delegates work through analyst, planner, critic, test engineer, implementer, and reviewer subagents.
+This uses the full orchestrated TDD workflow. The planner handles upfront request analysis and phased planning, then the agent delegates through critic, test engineer, implementer, and reviewer subagents.
 
 - Prompt: `/tdd <request>`
 - Agent: `fabys-tdd`
-- Workflow: Expansion -> Planning -> TDD Red Phase -> TDD Green Phase -> Review
+- Workflow: Planning -> Implementation (Red -> Green per phase) -> Review
 - Best for: bug fixes, API changes, refactors, and features where test-first delivery matters
 
 Example:
@@ -101,11 +101,11 @@ add rate limiting to the login endpoint
 
 ### Rapid Workflow
 
-This route keeps the spec and planning flow, then moves straight into implementation and an optional review (no tests).
+This route keeps the planning flow, then moves straight into implementation and an optional review (no tests).
 
 - Prompt: `/rapid <request>`
 - Agent: `fabys-rapid`
-- Workflow: Expansion -> Planning -> Implementation -> Optional Review
+- Workflow: Planning -> Implementation -> Optional Review
 - Best for: projects or features without test requirements (e.g. game jams, weekend playgrounds, ...)
 
 Example:
@@ -135,8 +135,7 @@ rename the install summary variable to make the output clearer
 
 The orchestrated workflows use `.plan/<feature-name>/` as their working directory for planning and execution artifacts.
 
-- `spec.md` stores the analyzed request and constraints
-- `plan.md` stores the implementation plan
+- `plan.md` stores the analyzed request, global decisions, and compact cross-phase manifest
 - `phase*.md` stores the per-phase execution plan
 - `state.json` and `run-log.md` track workflow progress
 - `review.md` stores the final review output when a review stage runs

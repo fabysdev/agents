@@ -6,7 +6,7 @@ import {PassThrough} from "node:stream";
 import {afterEach, beforeEach, describe, it} from "node:test";
 
 import {install, optionalProjectSkills, type InstallResult, type Tool} from "../src/install.js";
-import {agents, skills, type TemplateEntry} from "../src/templates/index.js";
+import {agents, allAgents, skills, type TemplateEntry} from "../src/templates/index.js";
 import {determineProjectSkills, determineTool, parseArgs, promptForProjectSkills, promptForTool} from "../src/cli.js";
 
 const CLAUDE_MODEL_PATTERN = /model:\s+claude-[\w.-]+/;
@@ -129,7 +129,7 @@ describe("template rendering", () => {
   const tools: Tool[] = ["copilot", "opencode", "claude"];
 
   describe("agents", () => {
-    for (const entry of agents) {
+    for (const entry of allAgents) {
       for (const tool of tools) {
         it(`${entry.relativePath} renders valid YAML frontmatter for ${tool}`, (): void => {
           // Act
@@ -191,14 +191,14 @@ describe("template rendering", () => {
 
     it("has the correct .agent.md relative paths", (): void => {
       // Assert
-      for (const entry of agents) {
+      for (const entry of allAgents) {
         assert.match(entry.relativePath, /\.agent\.md$/);
       }
     });
 
     it("copilot output does not contain opencode model paths", (): void => {
       // Act & Assert
-      for (const entry of agents) {
+      for (const entry of allAgents) {
         const output: string = entry.render("copilot");
         assert.ok(!output.includes("anthropic/"));
         assert.ok(!output.includes("openai/"));
@@ -207,7 +207,7 @@ describe("template rendering", () => {
 
     it("opencode output does not contain copilot markers", (): void => {
       // Act & Assert
-      for (const entry of agents) {
+      for (const entry of allAgents) {
         const output: string = entry.render("opencode");
         assert.ok(!output.includes("(copilot)"));
       }
@@ -216,7 +216,7 @@ describe("template rendering", () => {
     for (const expectation of PROJECT_SPECIFIC_INSTRUCTION_EXPECTATIONS) {
       it(`${expectation.relativePath} uses role-specific skills instead of XML blocks`, (): void => {
         // Arrange
-        const entry = agents.find((agent) => agent.relativePath === expectation.relativePath);
+        const entry = allAgents.find((agent) => agent.relativePath === expectation.relativePath);
 
         // Assert
         assert.ok(entry);
@@ -237,7 +237,7 @@ describe("template rendering", () => {
       for (const tool of tools) {
         it(`${expectation.relativePath} references portability skills for ${tool}`, (): void => {
           // Arrange
-          const entry = agents.find((agent) => agent.relativePath === expectation.relativePath);
+          const entry = allAgents.find((agent) => agent.relativePath === expectation.relativePath);
 
           // Assert
           assert.ok(entry);
@@ -323,7 +323,7 @@ describe("template rendering", () => {
 
   it("render function returns same content for same arguments", (): void => {
     // Arrange
-    const entry: TemplateEntry = agents[0];
+    const entry: TemplateEntry = allAgents[0];
 
     // Act
     const first: string = entry.render("copilot");
@@ -335,9 +335,9 @@ describe("template rendering", () => {
 
   it("render returns different content for different tools", (): void => {
     // Act
-    const copilot: string = agents[0].render("copilot");
-    const opencode: string = agents[0].render("opencode");
-    const claude: string = agents[0].render("claude");
+    const copilot: string = allAgents[0].render("copilot");
+    const opencode: string = allAgents[0].render("opencode");
+    const claude: string = allAgents[0].render("claude");
 
     // Assert
     assert.notStrictEqual(copilot, opencode);
@@ -369,6 +369,25 @@ describe("install", () => {
       assert.ok(fs.existsSync(targetPath));
       assert.strictEqual(fs.readFileSync(targetPath, "utf8"), entry.render("copilot"));
     }
+  });
+
+  it("does not install the analyst reference agent", (): void => {
+    // Act
+    install({targetBase, tool: "copilot"});
+
+    // Assert
+    assert.ok(!fs.existsSync(path.join(targetBase, "agents", "fabys-analyst.agent.md")));
+  });
+
+  it("removes the retired analyst agent on re-run", (): void => {
+    // Arrange
+    writeFile(targetBase, path.join("agents", "fabys-analyst.agent.md"), "stale analyst agent\n");
+
+    // Act
+    install({targetBase, tool: "copilot"});
+
+    // Assert
+    assert.ok(!fs.existsSync(path.join(targetBase, "agents", "fabys-analyst.agent.md")));
   });
 
   it("creates skill files when they don't exist", (): void => {

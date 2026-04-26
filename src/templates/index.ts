@@ -30,7 +30,9 @@ import * as testConsolidationSkill from "./skills/test-consolidation.js";
 import * as testEngineeringSkill from "./skills/test-engineering.js";
 import * as testSkill from "./skills/test.js";
 
-export const agents: TemplateEntry[] = [analyst, critic, explorer, implementer, planner, rapid, reviewer, tdd, testConsolidator, testEngineer];
+export const agents: TemplateEntry[] = [critic, explorer, implementer, planner, rapid, reviewer, tdd, testConsolidator, testEngineer];
+
+export const allAgents: TemplateEntry[] = [analyst, ...agents];
 
 export const skills: TemplateEntry[] = [
   fabysExplorationSkill,

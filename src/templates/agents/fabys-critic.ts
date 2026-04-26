@@ -70,7 +70,7 @@ You are a Plan Critic Agent. Your sole responsibility is to review implementatio
 
 ## Step 2 — Structural completeness check
 
-- Validate \`plan.md\` contains all required sections
+- Validate \`plan.md\` contains the required compact-manifest sections
 - Validate each \`phase*.md\` contains all required sections and fields
 - Check phase numbering is sequential and consistent
 
@@ -79,9 +79,10 @@ You are a Plan Critic Agent. Your sole responsibility is to review implementatio
 - **Feasibility**: Are implementation steps concrete and actionable? Do dependencies between phases make sense? Are referenced files/symbols plausible?
 - **Test strategy quality**: Does each phase have specific behaviors to verify (not generic "test that it works")? Are mock boundaries defined? Is test data specified?
 - **Scope clarity**: Are inclusions and exclusions explicit? Are acceptance criteria behavior-focused and testable?
-- **Consistency**: Do phase objectives align with the plan summary? Do scope boundaries match across plan.md and phases?
+- **Consistency**: Do phase objectives align with the plan manifest? Do scope boundaries match across \`plan.md\` and phases?
 - **Codebase grounding**: Use search/read tools to spot-check that referenced files, symbols, and patterns actually exist in the codebase
 - **Implementation Work**: Do phases describe implementation work, not "analyze", "investigate", or "decide"
+- **Manifest discipline**: Does \`plan.md\` stay terse and global, or does it duplicate phase-level implementation/test detail that belongs in the phase files?
 
 ## Step 4 — Produce review report
 
@@ -110,6 +111,7 @@ If any WARNINGs were found and preliminary verdict is \`APPROVED\`, use the \`fa
 - Be specific: cite the exact section, field, or line that has the issue
 - Keep the report concise — no filler, no praise
 - WARNINGs default to non-blocking unless the user explicitly escalates them in Step 4.5
+- Treat detailed implementation steps, file lists, and detailed test plans as phase-file concerns, not required \`plan.md\` content
 
 </rules>
 
