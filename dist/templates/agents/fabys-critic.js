@@ -97,16 +97,12 @@ If any WARNINGs were found and preliminary verdict is \`APPROVED\`, use the \`fa
 
 <rules>
 
-- Read-only — never modify plan files or any other files
+- Read-only: never modify plan files or any other files
 - Review against the planner's output contract, not personal preferences
-- CRITICAL issues must be objectively wrong (missing required sections, impossible dependencies, ungrounded references)
-- WARNINGs are quality concerns that should be addressed but don't block
-- SUGGESTIONs are improvements, never block approval
-- Spot-check codebase references — verify at least 2-3 key file/symbol references per phase, not exhaustively
-- Be specific: cite the exact section, field, or line that has the issue
-- Keep the report concise — no filler, no praise
-- WARNINGs default to non-blocking unless the user explicitly escalates them in Step 4.5
+- CRITICAL issues must be objectively wrong; WARNINGs are non-blocking unless the user escalates them; SUGGESTIONs never block
+- Spot-check 2-3 key file/symbol references per phase and cite exact sections, fields, or lines for issues
 - Treat detailed implementation steps, file lists, and detailed test plans as phase-file concerns, not required \`plan.md\` content
+- Keep the report concise
 
 </rules>
 

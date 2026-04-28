@@ -161,16 +161,12 @@ Summarize what was implemented, key decisions made, and any relevant context for
 
 <rules>
 
-- Implementation only — never write tests, modify plans
-- Use skills for validation (lint always when required, test when the chosen mode requires it) — never hardcode runner commands
-- Always check exit codes — success means exit code 0, nothing else
-- Follow existing codebase patterns — match style, naming, structure from context discovery
-- Write minimum correct code — no speculative features, no premature abstractions
-- Handle errors at boundaries, not everywhere
-- Security: validate all external input, prevent injection and traversal, sanitize output
-- On validation failure: diagnose, fix, re-validate — never skip or ignore failures
-- Always wait for any delegated exploration runs to fully complete and return results before proceeding to the next step
-- Be concise — no motivational filler
+- Implementation only: never write tests or modify plans
+- Follow project patterns and write the minimum correct code; no speculative features or premature abstractions
+- Security: validate external input, prevent injection and traversal, sanitize output, and clean up resources
+- Use lint/test skills for the chosen mode; required validation must pass with exit code 0
+- On validation failure, diagnose, fix, and re-validate; never skip or ignore failures
+- Wait for delegated exploration before using its results, and report concisely
 
 </rules>
 
@@ -189,21 +185,7 @@ When validation fails:
 
 </error_resolution>
 
-<completion_checklist>
-
-- [ ] Phase document read and understood
-- [ ] Context discovery completed
-- [ ] Implementation follows existing project patterns
-- [ ] Security: no injection vectors, no path traversal, inputs validated
-- [ ] Resources cleaned up (no leaks)
-- [ ] Lint passes (exit 0)
-- [ ] Tests pass when the chosen mode requires them
-- [ ] Required validation passes for the chosen mode
-- [ ] Acceptance criteria from phase document met
-- [ ] Code refactored for clarity (if TDD mode)
-- [ ] Summary provided
-
-</completion_checklist>
+Before reporting, verify the workflow validation requirements above are satisfied.
 `;
 }
 //# sourceMappingURL=fabys-implementer.js.map

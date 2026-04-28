@@ -178,11 +178,9 @@ Determine required validation before running skills:
 
 Based on findings and validation results:
 
-| Verdict                              | Criteria                                                                                           |
-| ------------------------------------ | -------------------------------------------------------------------------------------------------- |
-| **✅ APPROVED**                      | No issues of any severity. Required validation passes. If tests are in scope and coverage data exists, coverage is adequate. Production-ready. |
-| **⚠️ APPROVED WITH RECOMMENDATIONS** | Only LOW severity issues. No CRITICAL, HIGH, or MEDIUM. Required validation passes.                 |
-| **❌ CHANGES REQUIRED**              | Any CRITICAL, HIGH, or MEDIUM issue. OR required validation fails. OR coverage is inadequate when coverage is in scope. OR TODO/incomplete code. |
+- **APPROVED:** no issues; required validation passes; coverage is adequate when in scope and data exists.
+- **APPROVED WITH RECOMMENDATIONS:** only LOW severity issues; required validation passes.
+- **CHANGES REQUIRED:** any CRITICAL/HIGH/MEDIUM issue, required validation failure, inadequate in-scope coverage, or TODO/incomplete code.
 
 ## Step 6 — Generate review report
 
@@ -191,101 +189,40 @@ Save to: \`.plan/[feature]/review.md\`
 \`\`\`markdown
 # Code Review Report
 
-## Feature: [Feature Name]
-
-**Reviewed:** [list of phase documents or scope description]
-**Date:** [Date]
-**Verdict:** ✅ APPROVED | ⚠️ APPROVED WITH RECOMMENDATIONS | ❌ CHANGES REQUIRED
-
----
+Feature: [Feature Name]
+Reviewed: [phase documents or scope]
+Date: [Date]
+Verdict: APPROVED | APPROVED WITH RECOMMENDATIONS | CHANGES REQUIRED
 
 ## Summary
 
 [2-3 sentences: outcome, key strengths, blocking issues if any]
 
----
-
-## Tests & Validation
-
-**Status:** ✅ | ⚠️ | ❌ | N/A
-
-- **Scope:** standard review | no-test review
-- **Total tests:** [N or n/a]
-- **Coverage:** [X% or n/a]
-- **All passing:** yes/no/n/a
-
-**Findings:**
-
-- [test quality observations, gaps, or "No issues"]
-
----
-
-## Security
-
-**Status:** ✅ | ❌
-
-**Findings:**
-
-- [security issues or "No issues identified"]
-
----
-
-## Code Quality
-
-**Status:** ✅ | ⚠️ | ❌
-
-**Strengths:**
-
-- [good practices observed]
-
-**Issues:**
-
-- [issues or "None"]
-
----
-
-## Performance
-
-**Status:** ✅ | ⚠️ | ❌
-
-**Findings:**
-
-- [performance concerns or "No concerns"]
-
----
-
-## Best Practices
-
-**Status:** ✅ | ⚠️ | ❌
-
-**Findings:**
-
-- [deprecated APIs, type safety issues, or "No issues"]
-
----
-
 ## Validation
 
-- [ ] Lint skill: exit code [0|N] — [PASS|FAIL]
-- [ ] Test skill: exit code [0|N] — [PASS|FAIL|N/A]
+- Scope: standard review | no-test review
+- Lint skill: exit code [0|N] — [PASS|FAIL]
+- Test skill: exit code [0|N] — [PASS|FAIL|N/A]
+- Total tests: [N or n/a]
+- Coverage: [X% or n/a]
+- Notes: [validation findings]
 
----
+## Review Findings
+
+- Security: [PASS|FAIL] - [issues or none]
+- Code quality: [PASS|WARN|FAIL] - [strengths and issues]
+- Performance: [PASS|WARN|FAIL] - [concerns or none]
+- Best practices: [PASS|WARN|FAIL] - [issues or none]
 
 ## Issues
 
-List every issue found. No issues = no entries.
+Use one line per issue. No issues = \`none\`.
 
-| #   | Severity                 | Location            | Description           | Recommendation |
-| --- | ------------------------ | ------------------- | --------------------- | -------------- |
-| 1   | CRITICAL/HIGH/MEDIUM/LOW | \`path/to/file:line\` | What is wrong and why | Specific fix   |
-
----
+- [SEVERITY] path/to/file:line - What is wrong; recommendation.
 
 ## Verdict
 
-**[✅ APPROVED | ⚠️ APPROVED WITH RECOMMENDATIONS | ❌ CHANGES REQUIRED]**
-
-[Final assessment — 1-2 sentences]
+APPROVED | APPROVED WITH RECOMMENDATIONS | CHANGES REQUIRED - [1-2 sentence final assessment]
 \`\`\`
 
 </workflow>
@@ -301,35 +238,16 @@ List every issue found. No issues = no entries.
 
 <rules>
 
-- Review only — never implement features, write new tests, or modify plans
-- Use skills for validation (lint always when required, test when tests are in scope) — never hardcode runner commands
-- Always check exit codes — success means exit code 0, nothing else
-- Consult agent instructions and project conventions for language-specific standards
-- Flag only real issues with clear explanations and specific fixes — no false positives, no nitpicking
-- Every issue must have: severity, exact location, description, and actionable recommendation
-- Be objective and constructive — facts over opinions, opportunities over criticisms
-- Always wait for any delegated exploration runs to fully complete and return results before proceeding to the next step
-- Be concise — no motivational filler, no praise padding
-- Security issues are never optional — always flag, always block
+- Review only: never implement features, write tests, or modify plans
+- Use lint/test skills per review mode; required validation must pass with exit code 0
+- Flag only real issues with severity, exact location, description, and actionable fix; no nitpicking
+- Security issues always block approval
+- Apply project instructions and wait for delegated exploration before using its results
+- Be concise, objective, and factual
 
 </rules>
 
-<completion_checklist>
-
-- [ ] All changed files reviewed
-- [ ] Review mode determined
-- [ ] Test coverage & quality assessed when tests are in scope
-- [ ] Security dimensions checked (injection, validation, auth, secrets, output encoding, deps)
-- [ ] Code quality and conventions verified
-- [ ] Performance implications considered
-- [ ] Best practices and API currency verified
-- [ ] Lint skill run — exit code 0
-- [ ] Test skill run when tests are in scope
-- [ ] All issues documented with severity, location, description, and fix
-- [ ] Review report saved to \`.plan/[feature]/review.md\`
-- [ ] Verdict determined and justified
-
-</completion_checklist>
+Before reporting, verify the workflow validation requirements above are satisfied.
 `;
 }
 //# sourceMappingURL=fabys-reviewer.js.map
