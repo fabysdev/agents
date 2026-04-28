@@ -145,14 +145,12 @@ Return a concise consolidation report that includes:
 
 <rules>
 
-- Consolidation only — do not add new behavior, feature work, or speculative tests
-- Keep different test types separate unless the project already combines them intentionally
-- Optimize for readability and maintainability, not maximum file reduction
-- Use language-specific guidance from provided instructions and existing codebase patterns
-- Preserve isolation: cleanup, mock restoration, fixtures, and deterministic execution
-- If consolidation would reduce clarity or change semantics, keep files separate and explain why
-- Always wait for any delegated exploration runs to fully complete and return results before proceeding to the next step
-- Be concise — no motivational filler
+- Consolidation only: no new behavior, feature work, or speculative tests
+- Keep incompatible test types separate; optimize readability and maintainability over file reduction
+- Preserve behavior, assertion intent, isolation, cleanup, mock restoration, fixtures, and deterministic execution
+- Use project validation skills; check original exit codes/full output and treat non-zero as failure
+- If a merge reduces clarity or changes semantics, keep files separate and explain why
+- Wait for delegated exploration before using its results, and report concisely
 
 </rules>
 
@@ -171,18 +169,6 @@ When validation fails:
 
 </error_resolution>
 
-<completion_checklist>
-
-- [ ] Consolidation scope identified
-- [ ] Preservation inventory captured before edits
-- [ ] Files merged only when setup and test type are compatible
-- [ ] No test scenarios, assertions, or cleanup semantics lost
-- [ ] Superseded files removed only after coverage was transferred
-- [ ] Project validation skills run
-- [ ] Skill results, exit codes, and full outputs checked
-- [ ] Required validation passed
-- [ ] Summary includes files kept separate and why
-
-</completion_checklist>
+Before reporting, verify the workflow validation requirements above are satisfied.
 `;
 }
