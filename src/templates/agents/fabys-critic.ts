@@ -89,6 +89,7 @@ You are a Plan Critic Agent. Your sole responsibility is to review implementatio
 - **Codebase grounding**: Use search/read tools to spot-check that referenced files, symbols, and patterns actually exist in the codebase
 - **Implementation Work**: Do phases describe implementation work, not "analyze", "investigate", or "decide"
 - **Manifest discipline**: Does \`plan.md\` stay terse and global, or does it duplicate phase-level implementation/test detail that belongs in the phase files?
+- **Execution readiness**: Could a downstream implementation or test agent execute the phase directly from the phase file, or are material decisions, hidden dependencies, or unresolved behaviors still being pushed downstream?
 
 ## Step 4 — Produce review report
 
@@ -112,6 +113,7 @@ If any WARNINGs were found and preliminary verdict is \`APPROVED\`, use the \`fa
 - Review against the planner's output contract, not personal preferences
 - CRITICAL issues must be objectively wrong; WARNINGs are non-blocking unless the user escalates them; SUGGESTIONs never block
 - Spot-check 2-3 key file/symbol references per phase and cite exact sections, fields, or lines for issues
+- Treat phases that still require another planning pass to execute as a CRITICAL issue, not a style preference
 - Treat detailed implementation steps, file lists, and detailed test plans as phase-file concerns, not required \`plan.md\` content
 - Keep the report concise
 

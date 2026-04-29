@@ -83,13 +83,37 @@ Each agent loads a matching skill to pick up project-specific conventions. The i
 
 If a skill is present, the matching agent treats it as authoritative. If it conflicts with generic best practices, the project-specific skill wins.
 
-## Model Thinking Effort
+## Recommended Model Profiles
 
-Recommended thinking effort settings for the models used in this workflow:
+Works best when planning, orchestration, and final review stay on stronger models while the repeated execution agents use cheaper workhorse models.
 
-| Model               | Recommended effort | Why                                                                        |
-| ------------------- | ------------------ | -------------------------------------------------------------------------- |
-| `GPT-5.4 (copilot)` | `xhigh`            | Core orchestration and implementation quality benefit from deep reasoning. |
+### Standard
+
+| Agent                     | Recommended model | Suggested effort |
+| ------------------------- | ----------------- | ---------------- |
+| `fabys-critic`            | `gpt-5.4`         | `xhigh`          |
+| `fabys-explorer`          | `gpt-5.4-mini`    | `low`            |
+| `fabys-implementer`       | `gpt-5.4`         | `high`           |
+| `fabys-planner`           | `gpt-5.5`         | `high`           |
+| `fabys-rapid`             | `gpt-5.4`         | `high`           |
+| `fabys-reviewer`          | `gpt-5.5`         | `high`           |
+| `fabys-tdd`               | `gpt-5.4`         | `high`           |
+| `fabys-test-consolidator` | `gpt-5.4`         | `xhigh`          |
+| `fabys-test-engineer`     | `gpt-5.4`         | `high`           |
+
+### Max
+
+| Agent                     | Recommended model | Suggested effort |
+| ------------------------- | ----------------- | ---------------- |
+| `fabys-critic`            | `gpt-5.5`         | `high`           |
+| `fabys-explorer`          | `gpt-5.4-mini`    | `low`            |
+| `fabys-implementer`       | `gpt-5.5`         | `high`           |
+| `fabys-planner`           | `gpt-5.5`         | `high`           |
+| `fabys-rapid`             | `gpt-5.5`         | `medium`         |
+| `fabys-reviewer`          | `gpt-5.5`         | `high`           |
+| `fabys-tdd`               | `gpt-5.5`         | `medium`         |
+| `fabys-test-consolidator` | `gpt-5.5`         | `high`           |
+| `fabys-test-engineer`     | `gpt-5.5`         | `high`           |
 
 ## Usage
 
