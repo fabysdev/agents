@@ -50,7 +50,12 @@ tools:
   glob: true
   skill: true
   webfetch: true
-  websearch: true`;
+  websearch: true
+permission:
+  skill:
+    dev: deny
+    rapid: deny
+    tdd: deny`;
       break;
   }
 
