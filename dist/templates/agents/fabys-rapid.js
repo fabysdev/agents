@@ -64,7 +64,11 @@ tools:
   skill: true
   webfetch: true
   websearch: true
-  question: true`;
+  question: true
+permission:
+  skill:
+    dev: deny
+    tdd: deny`;
             break;
     }
     return `---
