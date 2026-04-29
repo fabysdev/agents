@@ -411,7 +411,7 @@ describe("template rendering", () => {
       const claude: string = entry!.render("claude");
 
       assert.ok(copilot.includes("Invoke the `fabys-explorer` subagent"));
-      assert.ok(opencode.includes("Invoke the `fabys-explorer` subagent"));
+      assert.ok(opencode.includes("Use the `exploration` skill, if available,"));
       assert.ok(claude.includes("maximum parallelism"));
       assert.ok(claude.includes("Use the `exploration` skill, if available,"));
     });
