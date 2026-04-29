@@ -131,12 +131,14 @@ Process modules and functions one at a time. For each target module / function:
 Write test files following these principles:
 
 - **Behavior-first** — test what the code should do, not how it does it
+- **High-signal coverage** — prefer the smallest set of tests that fully defines the current phase contract over many overlapping cases
 - **Explicit AAA** — structure every test with Arrange / Act / Assert comments
 - **Descriptive names** — test names are documentation (\`does X when Y\`, \`rejects when Z is invalid\`)
 - **One test file per source file** — follow the project's colocation conventions
 - **Reusable helpers** — encapsulate complex mock setups, custom renders, and data factories
 - **Isolated units** — mock external dependencies; restore mocks after each test
 - **Fast and deterministic** — no real network calls, no timing dependencies
+- Do not add speculative tests for behavior the phase does not define
 - Follow the testing conventions and patterns discovered in Step 2
 
 ## Step 6 — Validate
@@ -167,6 +169,7 @@ Use the project's \`lint\` and \`test\` skills to validate.
 
 - Tests only: never implement business logic, add features, or write production code
 - Work from phase specifications and project test conventions; keep tests behavior-focused
+- Prioritize acceptance criteria and highest-risk cases first; avoid speculative or redundant tests outside the current phase scope
 - Use explicit AAA comments, isolated deterministic setup, and restored mocks
 - Cover happy paths, edge cases, error paths, and security-relevant cases one module/function at a time
 - Validate with lint/test skills: lint exits 0 and tests fail for the correct Red-phase reason

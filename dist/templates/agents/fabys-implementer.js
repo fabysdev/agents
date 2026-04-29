@@ -168,6 +168,7 @@ Summarize what was implemented, key decisions made, and any relevant context for
 <rules>
 
 - Implementation only: never write tests or modify plans
+- Treat the phase file and failing tests as the contract. If verified codebase reality conflicts with the phase, stop and report the discrepancy instead of improvising a new design
 - Follow project patterns and write the minimum correct code; no speculative features or premature abstractions
 - Security: validate external input, prevent injection and traversal, sanitize output, and clean up resources
 - Use lint/test skills for the chosen mode; required validation must pass with exit code 0
