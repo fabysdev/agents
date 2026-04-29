@@ -1,3 +1,3 @@
-import type { Tool } from "../index.js";
+import type { TemplateRenderContext, Tool } from "../index.js";
 export declare const relativePath = "fabys-explorer.agent.md";
-export declare function render(tool: Tool): string;
+export declare function render(tool: Tool, context?: TemplateRenderContext): string;

@@ -1,5 +1,6 @@
 export const relativePath = "fabys-rapid.agent.md";
-export function render(tool) {
+export function render(tool, context) {
+    const models = context?.models;
     let header;
     switch (tool) {
         case "copilot":
@@ -7,7 +8,7 @@ export function render(tool) {
 description: >
   Rapid development orchestrator for projects that benefit from structured planning workflows but don't need tests.
   Delegates all work to specialized subagents: Planning → Implementation → Optional Review.
-model: GPT-5.4 (copilot)
+model: ${models?.["fabys-rapid"] ?? "GPT-5.4 (copilot)"}
 tools:
   [
     vscode/askQuestions,
@@ -33,7 +34,7 @@ user-invocable: true`;
 description: >
   Rapid development orchestrator for projects that benefit from structured planning workflows but don't need tests.
   Delegates all work to specialized subagents: Planning → Implementation → Optional Review.
-model: claude-opus-4-7
+model: ${models?.["fabys-rapid"] ?? "claude-opus-4-7"}
 tools:
   - AskUserQuestion
   - Read
@@ -51,7 +52,7 @@ tools:
   Rapid development orchestrator for projects that benefit from structured planning workflows but don't need tests.
   Delegates all work to specialized subagents: Planning → Implementation → Optional Review.
 mode: primary
-model: github-copilot/gpt-5.4
+model: ${models?.["fabys-rapid"] ?? "github-copilot/gpt-5.4"}
 tools:
   bash: true
   edit: true

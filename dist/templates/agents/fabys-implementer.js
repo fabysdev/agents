@@ -1,11 +1,12 @@
 export const relativePath = "fabys-implementer.agent.md";
-export function render(tool) {
+export function render(tool, context) {
+    const models = context?.models;
     let header;
     switch (tool) {
         case "copilot":
             header = `name: fabys-implementer
 description: Implementation Agent writes production code to satisfy phase specifications and pass required validation.
-model: GPT-5.4 (copilot)
+model: ${models?.["fabys-implementer"] ?? "GPT-5.4 (copilot)"}
 tools:
   [
     vscode/memory,
@@ -28,7 +29,7 @@ user-invocable: false`;
         case "claude":
             header = `name: fabys-implementer
 description: Implementation Agent writes production code to satisfy phase specifications and pass required validation.
-model: claude-opus-4-7
+model: ${models?.["fabys-implementer"] ?? "claude-opus-4-7"}
 tools:
   - Read
   - Edit
@@ -44,7 +45,7 @@ user-invocable: false`;
         case "opencode":
             header = `description: Implementation Agent writes production code to satisfy phase specifications and pass required validation.
 mode: subagent
-model: github-copilot/gpt-5.4
+model: ${models?.["fabys-implementer"] ?? "github-copilot/gpt-5.4"}
 tools:
   bash: true
   edit: true

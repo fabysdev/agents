@@ -1,4 +1,5 @@
 #!/usr/bin/env node
+import { type FabysAgentToolConfig } from "./config.js";
 import { type OptionalProjectSkillName, type Tool } from "./install.js";
 interface PromptContext {
     input?: NodeJS.ReadableStream;
@@ -28,6 +29,7 @@ interface CheckboxPromptConfig<TValue extends string> {
 type SelectPrompt<TValue extends string> = (config: SelectPromptConfig<TValue>, context?: PromptContext) => Promise<TValue>;
 type CheckboxPrompt<TValue extends string> = (config: CheckboxPromptConfig<TValue>, context?: PromptContext) => Promise<ReadonlyArray<TValue>>;
 export declare function parseArgs(argv: string[]): {
+    configLocation?: string;
     force: boolean;
     tool?: Tool;
 };
@@ -48,6 +50,7 @@ export declare function promptForProjectSkills(options?: {
 }): Promise<OptionalProjectSkillName[]>;
 export declare function determineProjectSkills(options?: {
     checkboxPrompt?: CheckboxPrompt<OptionalProjectSkillName>;
+    configuredSkills?: FabysAgentToolConfig["skills"];
     input?: NodeJS.ReadableStream;
     output?: NodeJS.WritableStream;
 }): Promise<OptionalProjectSkillName[]>;

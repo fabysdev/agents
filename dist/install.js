@@ -32,12 +32,14 @@ const WORKFLOW_SKILL_NAMES = new Set(["dev", "rapid", "tdd"]);
 const MANDATORY_PROJECT_SKILL_NAMES = new Set(["lint", "test"]);
 const OPTIONAL_PROJECT_SKILL_NAMES = new Set(optionalProjectSkills.map(({ name }) => name));
 const RETIRED_AGENT_FILES = ["fabys-analyst.agent.md"];
-export function install({ targetBase, tool, force = false, selectedProjectSkills }) {
+export function install({ targetBase, tool, force = false, selectedProjectSkills, agentModels }) {
     fs.mkdirSync(targetBase, { recursive: true });
     const selectedOptionalProjectSkills = normalizeSelectedProjectSkills(selectedProjectSkills);
+    const renderContext = { models: agentModels };
     const renameAgent = usesMarkdownAgentFilenames(tool) ? (filename) => filename.replace(".agent.md", ".md") : undefined;
     const agents = writeTemplates({
         entries: agentTemplates,
+        renderContext,
         targetDir: path.join(targetBase, "agents"),
         tool,
         overwrite: true,
@@ -50,24 +52,28 @@ export function install({ targetBase, tool, force = false, selectedProjectSkills
     });
     const fabysSkills = writeTemplates({
         entries: filterTemplates(skillTemplates, (entry) => isFabysSkill(getSkillName(entry))),
+        renderContext,
         targetDir: path.join(targetBase, "skills"),
         tool,
         overwrite: true
     });
     const workflowSkills = writeTemplates({
         entries: filterTemplates(skillTemplates, (entry) => WORKFLOW_SKILL_NAMES.has(getSkillName(entry))),
+        renderContext,
         targetDir: path.join(targetBase, "skills"),
         tool,
         overwrite: true
     });
     const mandatoryProjectSkills = writeTemplates({
         entries: filterTemplates(skillTemplates, (entry) => MANDATORY_PROJECT_SKILL_NAMES.has(getSkillName(entry))),
+        renderContext,
         targetDir: path.join(targetBase, "skills"),
         tool,
         overwrite: force
     });
     const selectedOptionalSkills = writeTemplates({
         entries: filterTemplates(skillTemplates, (entry) => selectedOptionalProjectSkills.has(getSkillName(entry))),
+        renderContext,
         targetDir: path.join(targetBase, "skills"),
         tool,
         overwrite: force
@@ -117,18 +123,19 @@ function normalizeSelectedProjectSkills(selectedProjectSkills) {
     }
     return normalizedSelection;
 }
-function writeTemplates({ entries, targetDir, tool, overwrite, renameFile }) {
+function writeTemplates({ entries, renderContext, targetDir, tool, overwrite, renameFile }) {
     let written = 0;
     let skipped = 0;
     for (const entry of entries) {
         const filename = renameFile ? renameFile(entry.relativePath) : entry.relativePath;
         const targetPath = path.join(targetDir, filename);
+        const renderedContent = entry.render(tool, renderContext);
         fs.mkdirSync(path.dirname(targetPath), { recursive: true });
         if (!overwrite && fs.existsSync(targetPath)) {
             skipped += 1;
             continue;
         }
-        fs.writeFileSync(targetPath, entry.render(tool));
+        fs.writeFileSync(targetPath, renderedContent);
         written += 1;
     }
     return { written, skipped };

@@ -1,11 +1,12 @@
 export const relativePath = "fabys-planner.agent.md";
-export function render(tool) {
+export function render(tool, context) {
+    const models = context?.models;
     let header;
     switch (tool) {
         case "copilot":
             header = `name: fabys-planner
 description: Planning agent to analyze requests and plan implementation work in phases with explicit test strategies.
-model: GPT-5.4 (copilot)
+model: ${models?.["fabys-planner"] ?? "GPT-5.4 (copilot)"}
 tools:
   [
     vscode/askQuestions,
@@ -27,7 +28,7 @@ user-invocable: false`;
         case "claude":
             header = `name: fabys-planner
 description: Planning agent to analyze requests and plan implementation work in phases with explicit test strategies.
-model: claude-opus-4-7
+model: ${models?.["fabys-planner"] ?? "claude-opus-4-7"}
 tools:
   - AskUserQuestion
   - Read
@@ -44,7 +45,7 @@ user-invocable: false`;
         case "opencode":
             header = `description: Planning agent to analyze requests and plan implementation work in phases with explicit test strategies.
 mode: subagent
-model: github-copilot/gpt-5.4
+model: ${models?.["fabys-planner"] ?? "github-copilot/gpt-5.4"}
 tools:
   bash: true
   edit: true

@@ -1,6 +1,7 @@
 #!/usr/bin/env node
 import path from "node:path";
 import { checkbox, select } from "@inquirer/prompts";
+import { loadFabysAgentConfig, resolveConfiguredProjectSkills, resolveToolConfig } from "./config.js";
 import { install, optionalProjectSkills } from "./install.js";
 const TOOL_PROMPT = "Which AI tool do you use?";
 const PROJECT_SKILL_PROMPT = "Select project-specific skills to install. lint and test are always installed.";
@@ -9,18 +10,17 @@ function isTool(value) {
 }
 export function parseArgs(argv) {
     const toolIndex = argv.indexOf("--tool");
+    const configIndex = argv.indexOf("--config");
     const force = argv.includes("--force");
+    const configLocation = configIndex === -1 ? undefined : readRequiredOptionValue(argv, configIndex, "--config");
     if (toolIndex === -1) {
-        return { force, tool: undefined };
+        return { force, tool: undefined, configLocation };
     }
-    const value = argv[toolIndex + 1];
-    if (value === undefined) {
-        throw new Error('--tool requires a value: "copilot", "opencode", or "claude"');
-    }
+    const value = readRequiredOptionValue(argv, toolIndex, "--tool");
     if (!isTool(value)) {
         throw new Error(`Invalid tool: ${value}. Use "copilot", "opencode", or "claude".`);
     }
-    return { force, tool: value };
+    return { force, tool: value, configLocation };
 }
 export async function promptForTool(options = {}) {
     const prompt = options.selectPrompt ?? select;
@@ -85,6 +85,9 @@ export async function promptForProjectSkills(options = {}) {
     return [...selectedSkills];
 }
 export async function determineProjectSkills(options = {}) {
+    if (options.configuredSkills !== undefined) {
+        return resolveConfiguredProjectSkills(options.configuredSkills);
+    }
     const input = (options.input ?? process.stdin);
     const output = (options.output ?? process.stdout);
     if (input.isTTY === true && output.isTTY === true) {
@@ -97,12 +100,30 @@ export async function determineProjectSkills(options = {}) {
     return optionalProjectSkills.map(({ name }) => name);
 }
 export async function runCli() {
-    const { force } = parseArgs(process.argv);
+    const { configLocation, force } = parseArgs(process.argv);
+    const { config, projectRoot } = loadFabysAgentConfig({
+        configLocation,
+        cwd: process.cwd()
+    });
     const tool = await determineTool(process.argv);
-    const selectedProjectSkills = await determineProjectSkills();
-    const targetBase = path.join(process.cwd(), getTargetDirectory(tool));
-    const result = install({ force, selectedProjectSkills, targetBase, tool });
+    const toolConfig = resolveToolConfig(config, tool);
+    const selectedProjectSkills = await determineProjectSkills({ configuredSkills: toolConfig.skills });
+    const targetBase = path.join(projectRoot, getTargetDirectory(tool));
+    const result = install({
+        agentModels: toolConfig.models,
+        force,
+        selectedProjectSkills,
+        targetBase,
+        tool
+    });
     process.stdout.write(`Installed for ${tool}: ${result.agents} agents, ${result.skillsWritten} skills (${result.skillsSkipped} skipped existing)\n`);
+}
+function readRequiredOptionValue(argv, optionIndex, optionName) {
+    const value = argv[optionIndex + 1];
+    if (value === undefined || value.startsWith("--")) {
+        throw new Error(`${optionName} requires a value.`);
+    }
+    return value;
 }
 function getTargetDirectory(tool) {
     switch (tool) {

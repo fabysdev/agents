@@ -1,11 +1,12 @@
 export const relativePath = "fabys-critic.agent.md";
-export function render(tool) {
+export function render(tool, context) {
+    const models = context?.models;
     let header;
     switch (tool) {
         case "copilot":
             header = `name: fabys-critic
 description: Critic agent reviews implementation plans for completeness, feasibility, and gaps before execution begins.
-model: GPT-5.4 (copilot)
+model: ${models?.["fabys-critic"] ?? "GPT-5.4 (copilot)"}
 tools:
   [
     vscode/askQuestions,
@@ -24,7 +25,7 @@ user-invocable: false`;
         case "claude":
             header = `name: fabys-critic
 description: Critic agent reviews implementation plans for completeness, feasibility, and gaps before execution begins.
-model: claude-opus-4-7
+model: ${models?.["fabys-critic"] ?? "claude-opus-4-7"}
 tools:
   - AskUserQuestion
   - Read
@@ -39,7 +40,7 @@ user-invocable: false`;
         case "opencode":
             header = `description: Critic agent reviews implementation plans for completeness, feasibility, and gaps before execution begins.
 mode: subagent
-model: github-copilot/gpt-5.4
+model: ${models?.["fabys-critic"] ?? "github-copilot/gpt-5.4"}
 tools:
   bash: true
   read: true

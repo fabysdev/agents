@@ -1,5 +1,5 @@
 import { type Tool } from "./templates/index.js";
-export type { Tool, TemplateEntry } from "./templates/index.js";
+export type { Tool, TemplateEntry, TemplateRenderContext } from "./templates/index.js";
 export interface ProjectSkillChoice {
     name: string;
     description: string;
@@ -29,10 +29,11 @@ export interface InstallOptions {
     tool: Tool;
     force?: boolean;
     selectedProjectSkills?: readonly string[];
+    agentModels?: Readonly<Record<string, string>>;
 }
 export interface InstallResult {
     agents: number;
     skillsWritten: number;
     skillsSkipped: number;
 }
-export declare function install({ targetBase, tool, force, selectedProjectSkills }: InstallOptions): InstallResult;
+export declare function install({ targetBase, tool, force, selectedProjectSkills, agentModels }: InstallOptions): InstallResult;
