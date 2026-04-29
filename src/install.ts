@@ -1,9 +1,9 @@
 import fs from "node:fs";
 import path from "node:path";
 
-import {agents as agentTemplates, skills as skillTemplates, type TemplateEntry, type Tool} from "./templates/index.js";
+import {agents as agentTemplates, skills as skillTemplates, type TemplateEntry, type TemplateRenderContext, type Tool} from "./templates/index.js";
 
-export type {Tool, TemplateEntry} from "./templates/index.js";
+export type {Tool, TemplateEntry, TemplateRenderContext} from "./templates/index.js";
 
 export interface ProjectSkillChoice {
   name: string;
@@ -50,6 +50,7 @@ export interface InstallOptions {
   tool: Tool;
   force?: boolean;
   selectedProjectSkills?: readonly string[];
+  agentModels?: Readonly<Record<string, string>>;
 }
 
 export interface InstallResult {
@@ -58,15 +59,17 @@ export interface InstallResult {
   skillsSkipped: number;
 }
 
-export function install({targetBase, tool, force = false, selectedProjectSkills}: InstallOptions): InstallResult {
+export function install({targetBase, tool, force = false, selectedProjectSkills, agentModels}: InstallOptions): InstallResult {
   fs.mkdirSync(targetBase, {recursive: true});
 
   const selectedOptionalProjectSkills = normalizeSelectedProjectSkills(selectedProjectSkills);
+  const renderContext: TemplateRenderContext = {models: agentModels};
 
   const renameAgent = usesMarkdownAgentFilenames(tool) ? (filename: string): string => filename.replace(".agent.md", ".md") : undefined;
 
   const agents = writeTemplates({
     entries: agentTemplates,
+    renderContext,
     targetDir: path.join(targetBase, "agents"),
     tool,
     overwrite: true,
@@ -81,6 +84,7 @@ export function install({targetBase, tool, force = false, selectedProjectSkills}
 
   const fabysSkills = writeTemplates({
     entries: filterTemplates(skillTemplates, (entry) => isFabysSkill(getSkillName(entry))),
+    renderContext,
     targetDir: path.join(targetBase, "skills"),
     tool,
     overwrite: true
@@ -88,6 +92,7 @@ export function install({targetBase, tool, force = false, selectedProjectSkills}
 
   const workflowSkills = writeTemplates({
     entries: filterTemplates(skillTemplates, (entry) => WORKFLOW_SKILL_NAMES.has(getSkillName(entry))),
+    renderContext,
     targetDir: path.join(targetBase, "skills"),
     tool,
     overwrite: true
@@ -95,6 +100,7 @@ export function install({targetBase, tool, force = false, selectedProjectSkills}
 
   const mandatoryProjectSkills = writeTemplates({
     entries: filterTemplates(skillTemplates, (entry) => MANDATORY_PROJECT_SKILL_NAMES.has(getSkillName(entry))),
+    renderContext,
     targetDir: path.join(targetBase, "skills"),
     tool,
     overwrite: force
@@ -102,6 +108,7 @@ export function install({targetBase, tool, force = false, selectedProjectSkills}
 
   const selectedOptionalSkills = writeTemplates({
     entries: filterTemplates(skillTemplates, (entry) => selectedOptionalProjectSkills.has(getSkillName(entry))),
+    renderContext,
     targetDir: path.join(targetBase, "skills"),
     tool,
     overwrite: force
@@ -118,6 +125,7 @@ export function install({targetBase, tool, force = false, selectedProjectSkills}
 
 interface WriteTemplatesOptions {
   entries: TemplateEntry[];
+  renderContext?: TemplateRenderContext;
   targetDir: string;
   tool: Tool;
   overwrite: boolean;
@@ -176,13 +184,14 @@ function normalizeSelectedProjectSkills(selectedProjectSkills?: readonly string[
   return normalizedSelection;
 }
 
-function writeTemplates({entries, targetDir, tool, overwrite, renameFile}: WriteTemplatesOptions): {written: number; skipped: number} {
+function writeTemplates({entries, renderContext, targetDir, tool, overwrite, renameFile}: WriteTemplatesOptions): {written: number; skipped: number} {
   let written = 0;
   let skipped = 0;
 
   for (const entry of entries) {
     const filename = renameFile ? renameFile(entry.relativePath) : entry.relativePath;
     const targetPath = path.join(targetDir, filename);
+    const renderedContent = entry.render(tool, renderContext);
 
     fs.mkdirSync(path.dirname(targetPath), {recursive: true});
 
@@ -191,7 +200,7 @@ function writeTemplates({entries, targetDir, tool, overwrite, renameFile}: Write
       continue;
     }
 
-    fs.writeFileSync(targetPath, entry.render(tool));
+    fs.writeFileSync(targetPath, renderedContent);
     written += 1;
   }
 

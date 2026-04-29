@@ -5,6 +5,7 @@ import path from "node:path";
 import {PassThrough} from "node:stream";
 import {afterEach, beforeEach, describe, it} from "node:test";
 
+import {FABYS_AGENTS_CONFIG_FILENAME, loadFabysAgentConfig, resolveConfiguredProjectSkills, resolveToolConfig} from "../src/config.js";
 import {install, optionalProjectSkills, type InstallResult, type Tool} from "../src/install.js";
 import {agents, allAgents, skills, type TemplateEntry} from "../src/templates/index.js";
 import {determineProjectSkills, determineTool, parseArgs, promptForProjectSkills, promptForTool} from "../src/cli.js";
@@ -206,6 +207,31 @@ describe("template rendering", () => {
         // Assert
         assert.match(output, CLAUDE_MODEL_PATTERN);
       });
+
+      if (agents.includes(entry)) {
+        for (const tool of tools) {
+          it(`${entry.relativePath} uses the render context model override for ${tool}`, (): void => {
+            // Arrange
+            const agentName = entry.relativePath.replace(/\.agent\.md$/, "");
+            const overrideModel = `custom/${agentName}-${tool}`;
+
+            // Act
+            const output: string = entry.render(tool, {
+              models: {
+                [agentName]: overrideModel
+              }
+            });
+
+            // Assert
+            assert.ok(output.includes(`model: ${overrideModel}`));
+          });
+        }
+
+        it(`${entry.relativePath} ignores an empty render context`, (): void => {
+          // Assert
+          assert.strictEqual(entry.render("copilot", {}), entry.render("copilot"));
+        });
+      }
 
       it(`${entry.relativePath} output has no template markers`, (): void => {
         // Act
@@ -428,6 +454,482 @@ describe("template rendering", () => {
   });
 });
 
+describe("loadFabysAgentConfig", () => {
+  let tempRoot: string;
+
+  beforeEach((): void => {
+    tempRoot = fs.mkdtempSync(path.join(os.tmpdir(), "fabysagents-config-"));
+  });
+
+  afterEach((): void => {
+    fs.rmSync(tempRoot, {force: true, recursive: true});
+  });
+
+  it("loads the default config file from the current working directory", (): void => {
+    // Arrange
+    writeJsonFile(tempRoot, FABYS_AGENTS_CONFIG_FILENAME, {
+      opencode: {
+        models: {
+          "fabys-tdd": "openai/gpt-5.5"
+        },
+        skills: {
+          exploration: false,
+          review: true
+        }
+      }
+    });
+
+    // Act
+    const loadedConfig = loadFabysAgentConfig({cwd: tempRoot});
+
+    // Assert
+    assert.strictEqual(loadedConfig.projectRoot, tempRoot);
+    assert.deepStrictEqual(loadedConfig.config, {
+      opencode: {
+        models: {
+          "fabys-tdd": "openai/gpt-5.5"
+        },
+        skills: {
+          exploration: false,
+          review: true
+        }
+      }
+    });
+  });
+
+  it("loads independent model and skill overrides for multiple tools", (): void => {
+    // Arrange
+    writeJsonFile(tempRoot, FABYS_AGENTS_CONFIG_FILENAME, {
+      claude: {
+        models: {
+          "fabys-reviewer": "claude-opus-4-5"
+        }
+      },
+      copilot: {
+        skills: {
+          planning: false
+        }
+      },
+      opencode: {
+        models: {
+          "fabys-tdd": "openai/gpt-5.5"
+        },
+        skills: {
+          exploration: false
+        }
+      }
+    });
+
+    // Act
+    const loadedConfig = loadFabysAgentConfig({cwd: tempRoot});
+
+    // Assert
+    assert.deepStrictEqual(loadedConfig.config, {
+      claude: {
+        models: {
+          "fabys-reviewer": "claude-opus-4-5"
+        }
+      },
+      copilot: {
+        skills: {
+          planning: false
+        }
+      },
+      opencode: {
+        models: {
+          "fabys-tdd": "openai/gpt-5.5"
+        },
+        skills: {
+          exploration: false
+        }
+      }
+    });
+  });
+
+  it("returns an empty config when no default config file exists", (): void => {
+    // Act
+    const loadedConfig = loadFabysAgentConfig({cwd: tempRoot});
+
+    // Assert
+    assert.strictEqual(loadedConfig.projectRoot, tempRoot);
+    assert.deepStrictEqual(loadedConfig.config, {});
+  });
+
+  it("loads config from a directory passed via --config semantics", (): void => {
+    // Arrange
+    const projectRoot: string = path.join(tempRoot, "workspace", "project");
+    fs.mkdirSync(projectRoot, {recursive: true});
+    writeJsonFile(projectRoot, FABYS_AGENTS_CONFIG_FILENAME, {
+      claude: {
+        skills: {
+          planning: false
+        }
+      }
+    });
+
+    // Act
+    const loadedConfig = loadFabysAgentConfig({
+      configLocation: projectRoot,
+      cwd: tempRoot
+    });
+
+    // Assert
+    assert.strictEqual(loadedConfig.projectRoot, projectRoot);
+    assert.deepStrictEqual(loadedConfig.config, {
+      claude: {
+        skills: {
+          planning: false
+        }
+      }
+    });
+  });
+
+  it("loads config from an explicit file path", (): void => {
+    // Arrange
+    const projectRoot: string = path.join(tempRoot, "workspace", "project");
+    const configPath: string = path.join(projectRoot, FABYS_AGENTS_CONFIG_FILENAME);
+
+    fs.mkdirSync(projectRoot, {recursive: true});
+    writeJsonFile(projectRoot, FABYS_AGENTS_CONFIG_FILENAME, {
+      copilot: {
+        models: {
+          "fabys-reviewer": "openai/gpt-5.5"
+        }
+      }
+    });
+
+    // Act
+    const loadedConfig = loadFabysAgentConfig({
+      configLocation: configPath,
+      cwd: tempRoot
+    });
+
+    // Assert
+    assert.strictEqual(loadedConfig.projectRoot, projectRoot);
+    assert.deepStrictEqual(loadedConfig.config, {
+      copilot: {
+        models: {
+          "fabys-reviewer": "openai/gpt-5.5"
+        }
+      }
+    });
+  });
+
+  it("returns an empty config when --config points to a directory without a config file", (): void => {
+    // Arrange
+    const projectRoot: string = path.join(tempRoot, "workspace", "project");
+    fs.mkdirSync(projectRoot, {recursive: true});
+
+    // Act
+    const loadedConfig = loadFabysAgentConfig({
+      configLocation: projectRoot,
+      cwd: tempRoot
+    });
+
+    // Assert
+    assert.strictEqual(loadedConfig.projectRoot, projectRoot);
+    assert.deepStrictEqual(loadedConfig.config, {});
+  });
+
+  it("throws when an explicit config file does not exist", (): void => {
+    // Arrange
+    const missingConfigPath: string = path.join(tempRoot, "missing.json");
+
+    // Act
+    const loadMissingConfig = (): ReturnType<typeof loadFabysAgentConfig> =>
+      loadFabysAgentConfig({
+        configLocation: missingConfigPath,
+        cwd: tempRoot
+      });
+
+    // Assert
+    assert.throws(loadMissingConfig, /config file not found/i);
+  });
+
+  it("throws when the config file contains invalid JSON", (): void => {
+    // Arrange
+    writeFile(tempRoot, FABYS_AGENTS_CONFIG_FILENAME, "{invalid json}\n");
+
+    // Act
+    const loadInvalidConfig = (): ReturnType<typeof loadFabysAgentConfig> => loadFabysAgentConfig({cwd: tempRoot});
+
+    // Assert
+    assert.throws(loadInvalidConfig, /invalid json/i);
+  });
+
+  it("throws when the config root is not an object", (): void => {
+    // Arrange
+    writeFile(tempRoot, FABYS_AGENTS_CONFIG_FILENAME, "[]\n");
+
+    // Act
+    const loadArrayConfig = (): ReturnType<typeof loadFabysAgentConfig> => loadFabysAgentConfig({cwd: tempRoot});
+
+    // Assert
+    assert.throws(loadArrayConfig, /json object/i);
+  });
+
+  it("throws when the config uses unsupported top-level keys", (): void => {
+    // Arrange
+    writeJsonFile(tempRoot, FABYS_AGENTS_CONFIG_FILENAME, {
+      models: {}
+    });
+
+    // Act
+    const loadUnsupportedConfig = (): ReturnType<typeof loadFabysAgentConfig> => loadFabysAgentConfig({cwd: tempRoot});
+
+    // Assert
+    assert.throws(loadUnsupportedConfig, /unsupported config keys/i);
+  });
+
+  it("throws when a tool config is not an object or contains unsupported keys", (): void => {
+    // Arrange
+    writeJsonFile(tempRoot, FABYS_AGENTS_CONFIG_FILENAME, {
+      opencode: []
+    });
+
+    // Act
+    const loadArrayToolConfig = (): ReturnType<typeof loadFabysAgentConfig> => loadFabysAgentConfig({cwd: tempRoot});
+
+    // Assert
+    assert.throws(loadArrayToolConfig, /expected "opencode"/i);
+
+    writeJsonFile(tempRoot, FABYS_AGENTS_CONFIG_FILENAME, {
+      opencode: {
+        unknown: true
+      }
+    });
+
+    const loadUnsupportedToolConfig = (): ReturnType<typeof loadFabysAgentConfig> => loadFabysAgentConfig({cwd: tempRoot});
+
+    assert.throws(loadUnsupportedToolConfig, /unsupported opencode config keys/i);
+  });
+
+  it("throws when model overrides use unsupported agents or invalid values", (): void => {
+    // Arrange
+    writeJsonFile(tempRoot, FABYS_AGENTS_CONFIG_FILENAME, {
+      opencode: {
+        models: {
+          unknown: "openai/gpt-5.5"
+        }
+      }
+    });
+
+    // Act
+    const loadUnsupportedAgentConfig = (): ReturnType<typeof loadFabysAgentConfig> => loadFabysAgentConfig({cwd: tempRoot});
+
+    // Assert
+    assert.throws(loadUnsupportedAgentConfig, /unsupported agent model override/i);
+
+    writeJsonFile(tempRoot, FABYS_AGENTS_CONFIG_FILENAME, {
+      opencode: {
+        models: {
+          "fabys-tdd": "   "
+        }
+      }
+    });
+
+    const loadEmptyModelConfig = (): ReturnType<typeof loadFabysAgentConfig> => loadFabysAgentConfig({cwd: tempRoot});
+
+    assert.throws(loadEmptyModelConfig, /non-empty string/i);
+
+    writeJsonFile(tempRoot, FABYS_AGENTS_CONFIG_FILENAME, {
+      opencode: {
+        models: {
+          "fabys-tdd": "openai/gpt-5.5\nother"
+        }
+      }
+    });
+
+    const loadMultilineModelConfig = (): ReturnType<typeof loadFabysAgentConfig> => loadFabysAgentConfig({cwd: tempRoot});
+
+    assert.throws(loadMultilineModelConfig, /single line/i);
+  });
+
+  it("throws when model overrides are not objects or string values", (): void => {
+    // Arrange
+    writeJsonFile(tempRoot, FABYS_AGENTS_CONFIG_FILENAME, {
+      opencode: {
+        models: []
+      }
+    });
+
+    // Act
+    const loadArrayModelsConfig = (): ReturnType<typeof loadFabysAgentConfig> => loadFabysAgentConfig({cwd: tempRoot});
+
+    // Assert
+    assert.throws(loadArrayModelsConfig, /expected "models" for opencode/i);
+
+    writeJsonFile(tempRoot, FABYS_AGENTS_CONFIG_FILENAME, {
+      opencode: {
+        models: {
+          "fabys-tdd": 42
+        }
+      }
+    });
+
+    const loadNonStringModelConfig = (): ReturnType<typeof loadFabysAgentConfig> => loadFabysAgentConfig({cwd: tempRoot});
+
+    assert.throws(loadNonStringModelConfig, /to be a string/i);
+  });
+
+  it("throws when project skill flags use unsupported names or invalid types", (): void => {
+    // Arrange
+    writeJsonFile(tempRoot, FABYS_AGENTS_CONFIG_FILENAME, {
+      opencode: {
+        skills: {
+          unknown: false
+        }
+      }
+    });
+
+    // Act
+    const loadUnsupportedSkillConfig = (): ReturnType<typeof loadFabysAgentConfig> => loadFabysAgentConfig({cwd: tempRoot});
+
+    // Assert
+    assert.throws(loadUnsupportedSkillConfig, /unsupported project skill/i);
+
+    writeJsonFile(tempRoot, FABYS_AGENTS_CONFIG_FILENAME, {
+      opencode: {
+        skills: {
+          exploration: "false"
+        }
+      }
+    });
+
+    const loadInvalidSkillValueConfig = (): ReturnType<typeof loadFabysAgentConfig> => loadFabysAgentConfig({cwd: tempRoot});
+
+    assert.throws(loadInvalidSkillValueConfig, /boolean/i);
+  });
+
+  it("throws when project skill flags are not an object", (): void => {
+    // Arrange
+    writeJsonFile(tempRoot, FABYS_AGENTS_CONFIG_FILENAME, {
+      opencode: {
+        skills: []
+      }
+    });
+
+    // Act
+    const loadArraySkillsConfig = (): ReturnType<typeof loadFabysAgentConfig> => loadFabysAgentConfig({cwd: tempRoot});
+
+    // Assert
+    assert.throws(loadArraySkillsConfig, /expected "skills" for opencode/i);
+  });
+});
+
+describe("README configuration docs", () => {
+  it("documents a valid per-tool config example", (): void => {
+    // Arrange
+    const readme = fs.readFileSync(path.join(process.cwd(), "README.md"), "utf8");
+    const exampleMatch = /```json\n([\s\S]*?"opencode"[\s\S]*?)\n```/.exec(readme);
+
+    // Act
+    const configExample = exampleMatch === null ? undefined : JSON.parse(exampleMatch[1]);
+
+    // Assert
+    assert.ok(exampleMatch, "Expected README to include a JSON config example for opencode.");
+    assert.deepStrictEqual(configExample, {
+      claude: {
+        skills: {
+          planning: false
+        }
+      },
+      opencode: {
+        models: {
+          "fabys-tdd": "openai/gpt-5.5"
+        },
+        skills: {
+          exploration: false,
+          review: true
+        }
+      }
+    });
+  });
+
+  it("does not document the retired global config shape", (): void => {
+    // Arrange
+    const readme = fs.readFileSync(path.join(process.cwd(), "README.md"), "utf8");
+
+    // Act
+    const configurationSection = readme.slice(readme.indexOf("### Configuration"), readme.indexOf("### Supported Targets"));
+
+    // Assert
+    assert.ok(configurationSection.includes("per tool"));
+    assert.ok(!configurationSection.includes("top-level `models`"));
+    assert.ok(!configurationSection.includes("top-level `skills`"));
+  });
+});
+
+describe("resolveToolConfig", () => {
+  it("returns the requested tool config without using other tool overrides", (): void => {
+    // Act
+    const toolConfig = resolveToolConfig(
+      {
+        copilot: {
+          models: {
+            "fabys-tdd": "GPT-5.4 (copilot)"
+          }
+        },
+        opencode: {
+          skills: {
+            exploration: false
+          }
+        }
+      },
+      "opencode"
+    );
+
+    // Assert
+    assert.deepStrictEqual(toolConfig, {
+      skills: {
+        exploration: false
+      }
+    });
+  });
+
+  it("returns an empty config when the selected tool has no overrides", (): void => {
+    // Act
+    const toolConfig = resolveToolConfig(
+      {
+        claude: {
+          skills: {
+            planning: false
+          }
+        }
+      },
+      "copilot"
+    );
+
+    // Assert
+    assert.deepStrictEqual(toolConfig, {});
+  });
+});
+
+describe("resolveConfiguredProjectSkills", () => {
+  it("keeps the default optional skill set except for disabled entries", (): void => {
+    // Act
+    const selectedSkills = resolveConfiguredProjectSkills({
+      exploration: false,
+      review: false,
+      "test-engineering": true
+    });
+
+    // Assert
+    assert.deepStrictEqual(
+      selectedSkills,
+      DEFAULT_OPTIONAL_PROJECT_SKILLS.filter((skillName) => skillName !== "exploration" && skillName !== "review")
+    );
+  });
+
+  it("returns all optional skills when the config object is empty", (): void => {
+    // Act
+    const selectedSkills = resolveConfiguredProjectSkills({});
+
+    // Assert
+    assert.deepStrictEqual(selectedSkills, DEFAULT_OPTIONAL_PROJECT_SKILLS);
+  });
+});
+
 describe("install", () => {
   let tempRoot: string;
   let targetBase: string;
@@ -605,6 +1107,66 @@ describe("install", () => {
 
     // Assert
     assert.deepStrictEqual(result, expectedCounts);
+  });
+
+  it("applies configured model overrides to installed agents", (): void => {
+    // Act
+    install({
+      agentModels: {
+        "fabys-explorer": "openai/gpt-5.5",
+        "fabys-tdd": "openai/o4-mini"
+      },
+      targetBase,
+      tool: "opencode"
+    });
+
+    // Assert
+    assert.match(fs.readFileSync(path.join(targetBase, "agents", "fabys-explorer.md"), "utf8"), /^model: openai\/gpt-5\.5$/m);
+    assert.match(fs.readFileSync(path.join(targetBase, "agents", "fabys-tdd.md"), "utf8"), /^model: openai\/o4-mini$/m);
+  });
+
+  it("leaves non-overridden agent models unchanged", (): void => {
+    // Act
+    install({
+      agentModels: {
+        "fabys-tdd": "openai/gpt-5.5"
+      },
+      targetBase,
+      tool: "copilot"
+    });
+
+    // Assert
+    assert.match(fs.readFileSync(path.join(targetBase, "agents", "fabys-tdd.agent.md"), "utf8"), /^model: openai\/gpt-5\.5$/m);
+    assert.match(fs.readFileSync(path.join(targetBase, "agents", "fabys-explorer.agent.md"), "utf8"), /^model: Claude Haiku 4\.5 \(copilot\)$/m);
+  });
+
+  it("does not change skill output when agent model overrides are provided", (): void => {
+    // Act
+    install({
+      agentModels: {
+        "fabys-reviewer": "openai/gpt-5.5"
+      },
+      targetBase,
+      tool: "copilot"
+    });
+
+    // Assert
+    assert.strictEqual(fs.readFileSync(path.join(targetBase, "skills", "dev", "SKILL.md"), "utf8"), findSkillTemplate("dev/SKILL.md").render("copilot"));
+  });
+
+  it("supports installing with an empty configured project-skill selection", (): void => {
+    // Act
+    install({
+      selectedProjectSkills: [],
+      targetBase,
+      tool: "copilot"
+    });
+
+    // Assert
+    assert.deepStrictEqual(
+      collectRelativeFiles(path.join(targetBase, "skills")),
+      [...EXPECTED_FABYS_SKILL_PATHS, ...EXPECTED_MANDATORY_SKILL_PATHS, ...EXPECTED_WORKFLOW_SKILL_PATHS].sort()
+    );
   });
 
   describe("install with tool: copilot", () => {
@@ -880,7 +1442,7 @@ describe("parseArgs", () => {
     const parsed = parseArgs(argv);
 
     // Assert
-    assert.deepStrictEqual(parsed, {force: false, tool: "copilot"});
+    assert.deepStrictEqual(parsed, {force: false, tool: "copilot", configLocation: undefined});
   });
 
   it("['node', 'cli.js', '--tool', 'opencode'] returns { tool: 'opencode' }", (): void => {
@@ -891,7 +1453,7 @@ describe("parseArgs", () => {
     const parsed = parseArgs(argv);
 
     // Assert
-    assert.deepStrictEqual(parsed, {force: false, tool: "opencode"});
+    assert.deepStrictEqual(parsed, {force: false, tool: "opencode", configLocation: undefined});
   });
 
   it("['node', 'cli.js', '--tool', 'claude'] returns { tool: 'claude' }", (): void => {
@@ -902,7 +1464,7 @@ describe("parseArgs", () => {
     const parsed = parseArgs(argv);
 
     // Assert
-    assert.deepStrictEqual(parsed, {force: false, tool: "claude"});
+    assert.deepStrictEqual(parsed, {force: false, tool: "claude", configLocation: undefined});
   });
 
   it("['node', 'cli.js'] returns { tool: undefined }", (): void => {
@@ -913,7 +1475,7 @@ describe("parseArgs", () => {
     const parsed = parseArgs(argv);
 
     // Assert
-    assert.deepStrictEqual(parsed, {force: false, tool: undefined});
+    assert.deepStrictEqual(parsed, {force: false, tool: undefined, configLocation: undefined});
   });
 
   it("['node', 'cli.js', '--force', '--tool', 'copilot'] returns force=true", (): void => {
@@ -924,7 +1486,7 @@ describe("parseArgs", () => {
     const parsed = parseArgs(argv);
 
     // Assert
-    assert.deepStrictEqual(parsed, {force: true, tool: "copilot"});
+    assert.deepStrictEqual(parsed, {force: true, tool: "copilot", configLocation: undefined});
   });
 
   it("['node', 'cli.js', '--tool'] throws", (): void => {
@@ -947,6 +1509,39 @@ describe("parseArgs", () => {
 
     // Assert
     assert.throws(parseInvalidTool, /invalid/i);
+  });
+
+  it("['node', 'cli.js', '--config', 'config-dir'] returns the config location", (): void => {
+    // Arrange
+    const argv: string[] = ["node", "cli.js", "--config", "config-dir"];
+
+    // Act
+    const parsed = parseArgs(argv);
+
+    // Assert
+    assert.deepStrictEqual(parsed, {configLocation: "config-dir", force: false, tool: undefined});
+  });
+
+  it("['node', 'cli.js', '--config'] throws", (): void => {
+    // Arrange
+    const argv: string[] = ["node", "cli.js", "--config"];
+
+    // Act
+    const parseMissingConfigValue = (): unknown => parseArgs(argv);
+
+    // Assert
+    assert.throws(parseMissingConfigValue, /--config/i);
+  });
+
+  it("['node', 'cli.js', '--config', '--tool', 'copilot'] throws", (): void => {
+    // Arrange
+    const argv: string[] = ["node", "cli.js", "--config", "--tool", "copilot"];
+
+    // Act
+    const parseFlagAsConfigValue = (): unknown => parseArgs(argv);
+
+    // Assert
+    assert.throws(parseFlagAsConfigValue, /--config/i);
   });
 });
 
@@ -1057,6 +1652,38 @@ describe("determineProjectSkills", () => {
     // Assert
     assert.deepStrictEqual(selectedSkills, DEFAULT_OPTIONAL_PROJECT_SKILLS);
   });
+
+  it("uses configured skills without prompting on a tty", async (): Promise<void> => {
+    // Arrange
+    const input = new PassThrough() as PassThrough & {isTTY?: boolean};
+    const output = new PassThrough() as PassThrough & {isTTY?: boolean};
+    let promptCallCount = 0;
+
+    input.isTTY = true;
+    output.isTTY = true;
+
+    // Act
+    const selectedSkills = await determineProjectSkills({
+      checkboxPrompt: async () => {
+        promptCallCount += 1;
+        return ["exploration"];
+      },
+      configuredSkills: {
+        exploration: false,
+        planning: true,
+        review: false
+      },
+      input,
+      output
+    });
+
+    // Assert
+    assert.deepStrictEqual(
+      selectedSkills,
+      DEFAULT_OPTIONAL_PROJECT_SKILLS.filter((skillName) => skillName !== "exploration" && skillName !== "review")
+    );
+    assert.strictEqual(promptCallCount, 0);
+  });
 });
 
 function collectRelativeFiles(rootPath: string): string[] {
@@ -1088,6 +1715,10 @@ function writeFile(basePath: string, relativePath: string, content: string): voi
   const filePath: string = path.join(basePath, relativePath);
   fs.mkdirSync(path.dirname(filePath), {recursive: true});
   fs.writeFileSync(filePath, content);
+}
+
+function writeJsonFile(basePath: string, relativePath: string, content: unknown): void {
+  writeFile(basePath, relativePath, `${JSON.stringify(content, null, 2)}\n`);
 }
 
 function buildExpectedInstalledSkillPaths(selectedProjectSkills: string[]): string[] {

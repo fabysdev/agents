@@ -1,8 +1,12 @@
 export type Tool = "copilot" | "opencode" | "claude";
 
+export interface TemplateRenderContext {
+  models?: Readonly<Record<string, string>>;
+}
+
 export interface TemplateEntry {
   relativePath: string;
-  render: (tool: Tool) => string;
+  render: (tool: Tool, context?: TemplateRenderContext) => string;
 }
 
 import * as analyst from "./agents/fabys-analyst.js";

@@ -25,6 +25,29 @@ Pass `--force` to also overwrite `lint`, `test`, and the selected optional proje
 Re-running the installer always overwrites agent files, refreshes the shared portability skills (`fabys-exploration`, `fabys-questions`), and refreshes the workflow skills (`dev`, `rapid`, `tdd`).
 `lint`, `test`, and the selected optional project-specific skills are preserved by default and only overwritten with `--force`.
 
+### Configuration
+
+Create `.fabysagents.json` in the project root, or pass `--config <path>`, to override models and optional project skills per tool. Each top-level key is a tool name; `models` is keyed by agent name, and `skills` is keyed by optional project-specific skill name.
+
+```json
+{
+  "opencode": {
+    "models": {
+      "fabys-tdd": "openai/gpt-5.5"
+    },
+    "skills": {
+      "exploration": false,
+      "review": true
+    }
+  },
+  "claude": {
+    "skills": {
+      "planning": false
+    }
+  }
+}
+```
+
 ### Supported Targets
 
 | Tool           | Output root  | Agent files                 | Skill files                   |

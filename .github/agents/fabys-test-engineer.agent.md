@@ -119,17 +119,13 @@ Use the project's `lint` and `test` skills to validate.
 
 <rules>
 
-- Tests only — never implement business logic, add features, or write production code
-- Work from phase document specifications, not from implementation code
-- Use project-provided skills for validation (lint, test)
-- Follow the project's existing test conventions and patterns
-- All tests must use explicit Arrange-Act-Assert (AAA) with comments
-- Mock external dependencies; restore mocks after each test
-- Test one module / function at a time, methodically and exhaustively
-- Always validate: lint must pass (exit 0), tests must fail for the right reasons
-- On validation failure: diagnose root cause, apply targeted fix, re-validate — never skip
-- Always wait for any delegated exploration runs to fully complete and return results before proceeding to the next step
-- Be concise — no motivational filler
+- Tests only: never implement business logic, add features, or write production code
+- Work from phase specifications and project test conventions; keep tests behavior-focused
+- Use explicit AAA comments, isolated deterministic setup, and restored mocks
+- Cover happy paths, edge cases, error paths, and security-relevant cases one module/function at a time
+- Validate with lint/test skills: lint exits 0 and tests fail for the correct Red-phase reason
+- On wrong failures or unexpected passes, diagnose and revise; never skip validation
+- Wait for delegated exploration before using its results, and report concisely
 
 </rules>
 
@@ -148,17 +144,4 @@ When validation fails:
 
 </error_resolution>
 
-<completion_checklist>
-
-- [ ] All testable behaviors from phase document covered
-- [ ] Tests follow project conventions from exploration
-- [ ] Explicit AAA pattern in all tests
-- [ ] Reusable test utilities created where needed
-- [ ] Mocks defined and restored after each test
-- [ ] Happy paths, error cases, edge cases, and security cases covered
-- [ ] Lint passes (exit 0)
-- [ ] Tests fail as expected (Red phase — non-zero exit)
-- [ ] All failures are for the right reasons (implementation missing)
-- [ ] Red phase complete — ready for implementation agent
-
-</completion_checklist>
+Before reporting, verify the workflow validation requirements above are satisfied.

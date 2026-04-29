@@ -1,15 +1,16 @@
-import type {Tool} from "../index.js";
+import type {TemplateRenderContext, Tool} from "../index.js";
 
 export const relativePath = "fabys-explorer.agent.md";
 
-export function render(tool: Tool): string {
-  let header;
+export function render(tool: Tool, context?: TemplateRenderContext): string {
+  const models = context?.models;
 
+  let header;
   switch (tool) {
     case "copilot":
       header = `name: fabys-explorer
 description: Exploration agent specialized in codebase analysis
-model: Claude Haiku 4.5 (copilot)
+model: ${models?.["fabys-explorer"] ?? "Claude Haiku 4.5 (copilot)"}
 tools:
   [
     vscode/memory,
@@ -27,7 +28,7 @@ user-invocable: false`;
     case "claude":
       header = `name: fabys-explorer
 description: Exploration agent specialized in codebase analysis
-model: claude-sonnet-4-6
+model: ${models?.["fabys-explorer"] ?? "claude-sonnet-4-6"}
 tools:
   - Read
   - Bash
@@ -41,7 +42,7 @@ user-invocable: false`;
     case "opencode":
       header = `description: Exploration agent specialized in codebase analysis
 mode: subagent
-model: github-copilot/claude-haiku-4.5
+model: ${models?.["fabys-explorer"] ?? "github-copilot/claude-haiku-4.5"}
 tools:
   bash: true
   read: true

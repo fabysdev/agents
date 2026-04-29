@@ -1,15 +1,16 @@
-import type {Tool} from "../index.js";
+import type {TemplateRenderContext, Tool} from "../index.js";
 
 export const relativePath = "fabys-analyst.agent.md";
 
-export function render(tool: Tool): string {
-  let header;
+export function render(tool: Tool, context?: TemplateRenderContext): string {
+  const models = context?.models;
 
+  let header;
   switch (tool) {
     case "copilot":
       header = `name: fabys-analyst
 description: Analyst agent specializes in analyzing user requests and researching the codebase to produce a structured feature context document.
-model: GPT-5.4 (copilot)
+model: ${models?.["fabys-analyst"] ?? "GPT-5.4 (copilot)"}
 tools:
   [
     vscode/askQuestions,
@@ -31,7 +32,7 @@ user-invocable: false`;
     case "claude":
       header = `name: fabys-analyst
 description: Analyst agent specializes in analyzing user requests and researching the codebase to produce a structured feature context document.
-model: claude-opus-4-7
+model: ${models?.["fabys-analyst"] ?? "claude-opus-4-7"}
 tools:
   - AskUserQuestion
   - Read
@@ -48,7 +49,7 @@ user-invocable: false`;
     case "opencode":
       header = `description: Analyst agent specializes in analyzing user requests and researching the codebase to produce a structured feature context document.
 mode: subagent
-model: github-copilot/gpt-5.4
+model: ${models?.["fabys-analyst"] ?? "github-copilot/gpt-5.4"}
 tools:
   bash: true
   edit: true

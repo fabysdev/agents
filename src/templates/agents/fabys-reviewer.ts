@@ -1,15 +1,16 @@
-import type {Tool} from "../index.js";
+import type {TemplateRenderContext, Tool} from "../index.js";
 
 export const relativePath = "fabys-reviewer.agent.md";
 
-export function render(tool: Tool): string {
-  let header;
+export function render(tool: Tool, context?: TemplateRenderContext): string {
+  const models = context?.models;
 
+  let header;
   switch (tool) {
     case "copilot":
       header = `name: fabys-reviewer
 description: Code Review & Quality Assurance Agent
-model: GPT-5.4 (copilot)
+model: ${models?.["fabys-reviewer"] ?? "GPT-5.4 (copilot)"}
 tools:
   [
     vscode/memory,
@@ -31,7 +32,7 @@ user-invocable: false`;
     case "claude":
       header = `name: fabys-reviewer
 description: Code Review & Quality Assurance Agent
-model: claude-opus-4-7
+model: ${models?.["fabys-reviewer"] ?? "claude-opus-4-7"}
 tools:
   - Read
   - Edit
@@ -47,7 +48,7 @@ user-invocable: false`;
     case "opencode":
       header = `description: Code Review & Quality Assurance Agent
 mode: subagent
-model: github-copilot/gpt-5.4
+model: ${models?.["fabys-reviewer"] ?? "github-copilot/gpt-5.4"}
 tools:
   bash: true
   edit: true

@@ -5,6 +5,7 @@ import os from "node:os";
 import path from "node:path";
 import {afterEach, beforeEach, describe, it} from "node:test";
 
+import {FABYS_AGENTS_CONFIG_FILENAME} from "../src/config.js";
 import {agents, skills} from "../src/templates/index.js";
 
 const REPO_ROOT: string = path.resolve(import.meta.dirname, "..");
@@ -16,6 +17,8 @@ const EXPECTED_FABYS_SKILL_PATHS: string[] = skills
   .map((skill) => skill.relativePath)
   .filter((relativePath) => relativePath.startsWith("fabys-"))
   .sort();
+const EXPECTED_MANDATORY_SKILL_PATHS: string[] = ["lint/SKILL.md", "test/SKILL.md"];
+const EXPECTED_WORKFLOW_SKILL_PATHS: string[] = ["dev/SKILL.md", "rapid/SKILL.md", "tdd/SKILL.md"];
 const REQUIRED_SKILL_FRONTMATTER_KEYS: string[] = ["name", "description"];
 const SUPPORTED_CLAUDE_SKILL_FRONTMATTER_KEYS: string[] = ["argument-hint", "description", "disable-model-invocation", "name", "user-invocable"];
 const SUPPORTED_TOOLS = ["copilot", "opencode", "claude"] as const;
@@ -170,6 +173,109 @@ describe("install script e2e", () => {
 
     // Assert
     assert.doesNotThrow(runInstallScript);
+  });
+
+  it("uses .fabysagents.json in the working directory to override models and optional skills", (): void => {
+    // Arrange
+    writeJsonFile(tempDir, FABYS_AGENTS_CONFIG_FILENAME, {
+      opencode: {
+        models: {
+          "fabys-explorer": "openai/gpt-5.5"
+        },
+        skills: {
+          exploration: false,
+          review: false
+        }
+      }
+    });
+
+    // Act
+    const stdout: string = runInstaller(tempDir, ["--tool", "opencode"]);
+
+    // Assert
+    assert.match(stdout, new RegExp(`Installed\\s+for\\s+opencode:\\s+${agents.length}\\s+agents,\\s+11\\s+skills\\s+\\(0\\s+skipped existing\\)`));
+    assert.deepStrictEqual(
+      collectRelativeFiles(path.join(tempDir, ".opencode", "skills")),
+      buildExpectedInstalledSkillPaths(["implementation", "planning", "test-consolidation", "test-engineering"])
+    );
+    assert.match(fs.readFileSync(path.join(tempDir, ".opencode", "agents", "fabys-explorer.md"), "utf8"), /^model: openai\/gpt-5\.5$/m);
+    assert.ok(!fs.existsSync(path.join(tempDir, ".opencode", "skills", "exploration", "SKILL.md")));
+    assert.ok(!fs.existsSync(path.join(tempDir, ".opencode", "skills", "review", "SKILL.md")));
+  });
+
+  it("uses only the selected tool section from .fabysagents.json", (): void => {
+    // Arrange
+    writeJsonFile(tempDir, FABYS_AGENTS_CONFIG_FILENAME, {
+      copilot: {
+        models: {
+          "fabys-explorer": "SHOULD-NOT-APPLY"
+        },
+        skills: {
+          exploration: false
+        }
+      },
+      opencode: {
+        models: {
+          "fabys-explorer": "openai/gpt-5.5"
+        },
+        skills: {
+          review: false
+        }
+      }
+    });
+
+    // Act
+    runInstaller(tempDir, ["--tool", "opencode"]);
+
+    // Assert
+    assert.match(fs.readFileSync(path.join(tempDir, ".opencode", "agents", "fabys-explorer.md"), "utf8"), /^model: openai\/gpt-5\.5$/m);
+    assert.ok(fs.existsSync(path.join(tempDir, ".opencode", "skills", "exploration", "SKILL.md")));
+    assert.ok(!fs.existsSync(path.join(tempDir, ".opencode", "skills", "review", "SKILL.md")));
+  });
+
+  it("uses --config to install into the specified project directory", (): void => {
+    // Arrange
+    const runnerDir: string = path.join(tempDir, "runner");
+    const projectRoot: string = path.join(tempDir, "workspace", "project");
+    fs.mkdirSync(runnerDir, {recursive: true});
+    fs.mkdirSync(projectRoot, {recursive: true});
+    writeJsonFile(projectRoot, FABYS_AGENTS_CONFIG_FILENAME, {
+      claude: {
+        models: {
+          "fabys-reviewer": "openai/gpt-5.5"
+        },
+        skills: {
+          planning: false
+        }
+      }
+    });
+
+    // Act
+    const stdout: string = runInstaller(runnerDir, ["--tool", "claude", "--config", projectRoot]);
+
+    // Assert
+    assert.match(stdout, new RegExp(`Installed\\s+for\\s+claude:\\s+${agents.length}\\s+agents,\\s+12\\s+skills\\s+\\(0\\s+skipped existing\\)`));
+    assert.ok(!fs.existsSync(path.join(runnerDir, ".claude")));
+    assert.ok(fs.existsSync(path.join(projectRoot, ".claude", "agents")));
+    assert.deepStrictEqual(
+      collectRelativeFiles(path.join(projectRoot, ".claude", "skills")),
+      buildExpectedInstalledSkillPaths(["exploration", "implementation", "review", "test-consolidation", "test-engineering"])
+    );
+    assert.match(fs.readFileSync(path.join(projectRoot, ".claude", "agents", "fabys-reviewer.md"), "utf8"), /^model: openai\/gpt-5\.5$/m);
+    assert.ok(!fs.existsSync(path.join(projectRoot, ".claude", "skills", "planning", "SKILL.md")));
+  });
+
+  it("fails with a clear error when --config points to invalid JSON", (): void => {
+    // Arrange
+    const configPath: string = path.join(tempDir, FABYS_AGENTS_CONFIG_FILENAME);
+    fs.writeFileSync(configPath, "{invalid json}\n");
+
+    // Act
+    const result = runInstallerProcess(tempDir, ["--tool", "copilot", "--config", configPath]);
+
+    // Assert
+    assert.notStrictEqual(result.status, 0);
+    assert.match(result.stderr, /invalid json/i);
   });
 
   describe("install --tool opencode", () => {
@@ -491,4 +597,14 @@ function collectRelativeFiles(rootPath: string): string[] {
   }
 
   return relativeFiles.sort();
+}
+
+function buildExpectedInstalledSkillPaths(selectedProjectSkills: string[]): string[] {
+  return [...EXPECTED_FABYS_SKILL_PATHS, ...EXPECTED_MANDATORY_SKILL_PATHS, ...EXPECTED_WORKFLOW_SKILL_PATHS, ...selectedProjectSkills.map((skillName) => `${skillName}/SKILL.md`)].sort();
+}
+
+function writeJsonFile(basePath: string, relativePath: string, content: unknown): void {
+  const filePath: string = path.join(basePath, relativePath);
+  fs.mkdirSync(path.dirname(filePath), {recursive: true});
+  fs.writeFileSync(filePath, `${JSON.stringify(content, null, 2)}\n`);
 }

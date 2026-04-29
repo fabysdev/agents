@@ -1,0 +1,15 @@
+{
+  "copilot": {
+    "models": {
+      "fabys-tdd": "GPT-5.4 (copilot)"
+    },
+    "skills": {
+      "exploration": false,
+      "planning": false,
+      "implementation": false,
+      "review": false,
+      "test-engineering": false,
+      "test-consolidation": false
+    }
+  }
+}

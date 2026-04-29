@@ -1,17 +1,18 @@
-import type {Tool} from "../index.js";
+import type {TemplateRenderContext, Tool} from "../index.js";
 
 export const relativePath = "fabys-tdd.agent.md";
 
-export function render(tool: Tool): string {
-  let header;
+export function render(tool: Tool, context?: TemplateRenderContext): string {
+  const models = context?.models;
 
+  let header;
   switch (tool) {
     case "copilot":
       header = `name: fabys-tdd
 description: >
   Main orchestrator agent for Test-Driven Development (TDD).
   The agent delegates all work to specialized subagents, ensuring that tests drive the development process and that quality is maintained at every stage.
-model: GPT-5.4 (copilot)
+model: ${models?.["fabys-tdd"] ?? "GPT-5.4 (copilot)"}
 tools:
   [
     vscode/askQuestions,
@@ -38,7 +39,7 @@ user-invocable: true`;
 description: >
   Main orchestrator agent for Test-Driven Development (TDD).
   The agent delegates all work to specialized subagents, ensuring that tests drive the development process and that quality is maintained at every stage.
-model: claude-opus-4-7
+model: ${models?.["fabys-tdd"] ?? "claude-opus-4-7"}
 tools:
   - AskUserQuestion
   - Read
@@ -56,7 +57,7 @@ tools:
   Main orchestrator agent for Test-Driven Development (TDD).
   The agent delegates all work to specialized subagents, ensuring that tests drive the development process and that quality is maintained at every stage.
 mode: primary
-model: github-copilot/gpt-5.4
+model: ${models?.["fabys-tdd"] ?? "github-copilot/gpt-5.4"}
 tools:
   bash: true
   edit: true

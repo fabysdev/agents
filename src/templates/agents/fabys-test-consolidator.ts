@@ -1,15 +1,16 @@
-import type {Tool} from "../index.js";
+import type {TemplateRenderContext, Tool} from "../index.js";
 
 export const relativePath = "fabys-test-consolidator.agent.md";
 
-export function render(tool: Tool): string {
-  let header;
+export function render(tool: Tool, context?: TemplateRenderContext): string {
+  const models = context?.models;
 
+  let header;
   switch (tool) {
     case "copilot":
       header = `name: fabys-test-consolidator
 description: Consolidates, merges, and deduplicates overlapping test files to eliminate test file sprawl while preserving behavior.
-model: GPT-5.4 (copilot)
+model: ${models?.["fabys-test-consolidator"] ?? "GPT-5.4 (copilot)"}
 tools:
   [
     vscode/memory,
@@ -33,7 +34,7 @@ user-invocable: true`;
     case "claude":
       header = `name: fabys-test-consolidator
 description: Consolidates, merges, and deduplicates overlapping test files to eliminate test file sprawl while preserving behavior.
-model: claude-opus-4-7
+model: ${models?.["fabys-test-consolidator"] ?? "claude-opus-4-7"}
 tools:
   - Read
   - Edit
@@ -49,7 +50,7 @@ user-invocable: false`;
     case "opencode":
       header = `description: Consolidates, merges, and deduplicates overlapping test files to eliminate test file sprawl while preserving behavior.
 mode: primary
-model: github-copilot/gpt-5.4
+model: ${models?.["fabys-test-consolidator"] ?? "github-copilot/gpt-5.4"}
 tools:
   bash: true
   edit: true
