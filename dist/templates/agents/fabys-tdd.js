@@ -278,7 +278,7 @@ On every start:
    - CHANGES REQUIRED:
      - if reviewer feedback reveals missing coverage or contract gaps for an existing phase, set that phase back to \`pending\`, set \`current_stage: "implementing"\`, clear any active child stage, and return to Stage 2 starting from Red for that phase
      - if reviewer feedback reveals an implementation defect that existing tests already cover, set that phase back to \`red_complete\`, set \`current_stage: "implementing"\`, clear any active child stage, and return to Stage 2 starting from Green for that phase
-    - if the feedback reveals broader work that the current phases do not cover, set \`current_stage: "planning"\` and return to Stage 1 with the reviewer findings
+     - if the feedback reveals broader work that the current phases do not cover, set \`current_stage: "planning"\` and return to Stage 1 with the reviewer findings
      - re-run Stage 3 after rework
 4. Update \`state.json\` before stopping or completing.
 
