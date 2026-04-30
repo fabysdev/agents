@@ -86,10 +86,12 @@ You are a Test Engineer Agent. Your sole responsibility is to write comprehensiv
 Read the phase document from \`.plan/{feature}/\` and focus on:
 
 - Objective and acceptance criteria
-- Preconditions and invariants
-- Edge cases and failure modes to verify
-- Test strategy: behaviors to verify, mock boundaries, test data, and any documented non-automated verification
+- Preconditions and invariants or constraints to preserve
+- Edge cases and failure modes to verify when present
+- Test strategy or test updates required: behaviors to verify, mock boundaries, test data, and any documented non-automated verification
 - Expected inputs, outputs, and side effects
+
+If the phase includes \`## Original phase path\`, read that original phase too and treat the current phase as a review follow-up delta. In that case, \`## Test updates required\`, \`## Verification\`, and \`## Acceptance criteria\` are the immediate contract.
 
 In true TDD, implementation code does not exist yet. Work from specifications only.
 
