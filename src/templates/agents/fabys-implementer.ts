@@ -91,13 +91,15 @@ You are an Implementation Agent. Your sole responsibility is to write production
 Load the phase from \`.plan/{feature}/\` and focus on:
 
 - Objective and acceptance criteria
-- Scope: included work and explicit exclusions
-- Preconditions and invariants to preserve
-- Implementation outline and key decisions
-- Edge cases and failure modes to verify
+- Scope or required changes
+- Preconditions and invariants or constraints to preserve
+- Implementation outline, required changes, and key decisions
+- Edge cases and failure modes to verify when present
 - Relevant files, symbols, and reusable patterns
-- Data models, interfaces, and business logic
-- Dependencies on prior phases
+- Data models, interfaces, and business logic when present
+- Dependencies on prior phases and any \`Original phase path\`
+
+If the phase includes \`## Original phase path\`, read that original phase too and treat the current phase as a review follow-up delta. In that case, \`## Required changes\`, \`## Constraints to preserve\`, \`## Verification\`, and \`## Acceptance criteria\` are the immediate contract.
 
 Determine **implementation mode**:
 

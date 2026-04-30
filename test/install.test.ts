@@ -136,7 +136,15 @@ const WORKFLOW_STATE_EXPECTATIONS: Array<{
       "Keep `state.json` as the single source of truth for workflow progress",
       "Phase files remain named `phase*.md`; never rename them to track progress",
       '"status": "planning"',
-      '"current_stage": "planning"'
+      '"current_stage": "planning"',
+      '"review_cycle": 0',
+      '"last_review_file": null',
+      '"last_review_verdict": null',
+      '"needs_rereview": false',
+      '"review_replan_pending": false',
+      '"latest_review": null',
+      "Reviews are append-only and numbered.",
+      "If all phases are `complete`, go to Review when `needs_rereview` or `review_requested` is `true`; otherwise ask whether to review or finish."
     ],
     forbiddenSnippets: ["COMPLETE_*", "RED_*"]
   },
@@ -146,9 +154,52 @@ const WORKFLOW_STATE_EXPECTATIONS: Array<{
       "Keep `state.json` as the single source of truth for workflow progress",
       "`state.json` marks a phase as `red_complete` after Red and `complete` after Green",
       '"status": "planning"',
-      '"current_stage": "planning"'
+      '"current_stage": "planning"',
+      '"review_cycle": 0',
+      '"last_review_file": null',
+      '"last_review_verdict": null',
+      '"needs_rereview": false',
+      '"review_replan_pending": false',
+      '"latest_review": null',
+      "Reviews are append-only and numbered.",
+      "If `review_replan_pending` is `true`, resume Stage 1 using `last_review_file` and the latest reviewer findings as inputs."
     ],
     forbiddenSnippets: ["COMPLETE_*", "RED_*"]
+  }
+];
+const REVIEW_ROUTING_EXPECTATIONS: Array<{
+  relativePath: string;
+  requiredSnippets: string[];
+}> = [
+  {
+    relativePath: "fabys-reviewer.agent.md",
+    requiredSnippets: [
+      "review-XX.md",
+      "Route: NONE | APPEND_PHASES | REPLAN_REQUIRED",
+      "You may append rework phase files and update `plan.md` only when Route is `APPEND_PHASES`",
+      "## Original phase path",
+      "## Required changes",
+      "## Constraints to preserve",
+      "## Test updates required",
+      "original phase: .plan/[feature]/phaseNN_<slug>.md",
+      "If Route is `REPLAN_REQUIRED`, create no rework phases."
+    ]
+  },
+  {
+    relativePath: "fabys-planner.agent.md",
+    requiredSnippets: [
+      "review-driven `REPLAN_REQUIRED` follow-up",
+      "phaseNN_reviewXX_<slug>.md",
+      "Preserve numbered review files during review-driven replans; treat them as input, not output"
+    ]
+  },
+  {
+    relativePath: "fabys-rapid.agent.md",
+    requiredSnippets: ["review-01.md", "Route: APPEND_PHASES", "Route: REPLAN_REQUIRED"]
+  },
+  {
+    relativePath: "fabys-tdd.agent.md",
+    requiredSnippets: ["review-01.md", "Route: APPEND_PHASES", "Route: REPLAN_REQUIRED"]
   }
 ];
 const VALIDATION_CONTRACT_EXPECTATIONS: Array<{
@@ -190,14 +241,19 @@ const PHASE_CONTRACT_EXPECTATIONS: Array<{
   },
   {
     relativePath: "fabys-implementer.agent.md",
-    requiredSnippets: ["Preconditions and invariants to preserve", "Treat documented invariants and edge/failure cases as part of the contract, not optional guidance"]
+    requiredSnippets: [
+      "Preconditions and invariants or constraints to preserve",
+      "If the phase includes `## Original phase path`, read that original phase too and treat the current phase as a review follow-up delta.",
+      "Treat documented invariants and edge/failure cases as part of the contract, not optional guidance"
+    ]
   },
   {
     relativePath: "fabys-test-engineer.agent.md",
     requiredSnippets: [
-      "- Preconditions and invariants",
-      "- Edge cases and failure modes to verify",
-      "Test strategy: behaviors to verify, mock boundaries, test data, and any documented non-automated verification"
+      "- Preconditions and invariants or constraints to preserve",
+      "- Edge cases and failure modes to verify when present",
+      "Test strategy or test updates required: behaviors to verify, mock boundaries, test data, and any documented non-automated verification",
+      "If the phase includes `## Original phase path`, read that original phase too and treat the current phase as a review follow-up delta."
     ]
   }
 ];
@@ -431,6 +487,22 @@ describe("template rendering", () => {
 
     for (const expectation of PLANNING_WORKFLOW_EXPECTATIONS) {
       it(`${expectation.relativePath} requires explicit invariants and edge cases in planning output`, (): void => {
+        // Arrange
+        const entry = allAgents.find((agent) => agent.relativePath === expectation.relativePath);
+
+        // Assert
+        assert.ok(entry);
+
+        const output: string = entry!.render("copilot");
+
+        for (const snippet of expectation.requiredSnippets) {
+          assert.ok(output.includes(snippet));
+        }
+      });
+    }
+
+    for (const expectation of REVIEW_ROUTING_EXPECTATIONS) {
+      it(`${expectation.relativePath} supports numbered review routing and append-only follow-up work`, (): void => {
         // Arrange
         const entry = allAgents.find((agent) => agent.relativePath === expectation.relativePath);
 
