@@ -73,7 +73,12 @@ tools:
 permission:
   skill:
     dev: deny
-    rapid: deny`;
+    rapid: deny
+    planning: deny
+    test-engineering: deny
+    implementation: deny
+    review: deny
+    exploration: deny`;
       break;
   }
 
@@ -120,7 +125,7 @@ Before announcing a stage complete, validate each agent's deliverable:
 - \`./.plan/[feature-name]/plan.md\` exists
 - Contains the required compact-manifest sections: Request, Global decisions, Phase index, Global verification, Scope boundaries and risks
 - At least one \`phase*.md\` file exists
-- Each phase file includes: scope, test strategy, and dependencies
+- Each phase file includes: scope, preconditions and invariants, edge cases and failure modes to verify, test strategy, and dependencies
 
 **Stage 2 (Implementation):**
 
@@ -156,6 +161,7 @@ The ISO-8601 timestamp should be generated at the moment of state update (e.g., 
   "blocked_reason": null,
   "last_completed_action": null,
   "last_updated": "ISO-8601 timestamp",
+  "agent_sessions": {},
   "artifacts": {
     "plan": null,
     "review": null
@@ -236,12 +242,13 @@ On every start:
 ## Stage 1: Planning
 
 1. If \`state.json\` already records planning as complete and \`artifacts.plan\` exists, skip to Stage 2.
-2. Invoke fabys-planner to analyze the request and create an implementation plan.
+2. Invoke fabys-planner to create or revise the implementation plan.
+   - On the initial invocation, pass the full original user prompt/request unchanged.
+   - On later planning cycles, reuse the same session when available and pass only the current planning artifacts, current workflow state, and critic feedback.
    - Include in the prompt: **"Plan self-contained, sequential phases. Each phase must be able to complete a full TDD cycle: write only that phase's failing tests, make them pass, refactor, and leave the suite green before the next phase begins. Avoid plans that depend on future phases having active failing tests."**
-   - On later planning cycles, reuse the same session when available.
 3. Validate output per Stage 1 rules above.
 4. Invoke fabys-critic to review the plan. Increment \`critic_cycles\` in \`state.json\` after each critic pass.
-   - Changes required and cycle < 3: return to step 2 with critic feedback.
+   - Changes required and cycle < 3: return to step 2 in revision mode with critic feedback.
    - Changes required and cycle ≥ 3: set \`status: "awaiting_user"\`, record a \`blocked_reason\`, surface the unresolved issues to the user, and stop.
    - On later critic cycles, reuse the same session when available.
 5. Before asking the user to confirm the plan, set \`status: "awaiting_user"\` with \`blocked_reason: "plan confirmation required"\`.

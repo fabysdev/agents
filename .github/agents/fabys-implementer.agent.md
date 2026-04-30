@@ -41,7 +41,9 @@ Load the phase from `.plan/{feature}/` and focus on:
 
 - Objective and acceptance criteria
 - Scope: included work and explicit exclusions
+- Preconditions and invariants to preserve
 - Implementation outline and key decisions
+- Edge cases and failure modes to verify
 - Relevant files, symbols, and reusable patterns
 - Data models, interfaces, and business logic
 - Dependencies on prior phases
@@ -85,6 +87,7 @@ Let test failures guide your implementation. Don't over-engineer or add behavior
 
 - Mirror existing project patterns — match style, naming, structure, and conventions
 - Write the simplest correct code that satisfies requirements
+- Treat documented invariants and edge/failure cases as part of the contract, not optional guidance
 - Handle errors at system boundaries (I/O, network, user input, IPC)
 - Prevent security vulnerabilities: validate inputs, sanitize outputs, avoid injection vectors
 - Clean up resources (handles, connections, processes, listeners)
@@ -122,7 +125,9 @@ Summarize what was implemented, key decisions made, and any relevant context for
 <rules>
 
 - Implementation only: never write tests or modify plans
+- Treat the phase file and failing tests as the contract. If verified codebase reality conflicts with the phase, stop and report the discrepancy instead of improvising a new design
 - Follow project patterns and write the minimum correct code; no speculative features or premature abstractions
+- Preserve documented invariants and make sure explicit edge/failure scenarios are covered before considering the phase complete
 - Security: validate external input, prevent injection and traversal, sanitize output, and clean up resources
 - Use lint/test skills for the chosen mode; required validation must pass with exit code 0
 - On validation failure, diagnose, fix, and re-validate; never skip or ignore failures

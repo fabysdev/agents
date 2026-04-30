@@ -72,7 +72,12 @@ tools:
 permission:
   skill:
     dev: deny
-    tdd: deny`;
+    tdd: deny
+    planning: deny
+    test-engineering: deny
+    implementation: deny
+    review: deny
+    exploration: deny`;
       break;
   }
 
@@ -116,7 +121,7 @@ Before announcing a stage complete, validate each agent's deliverable:
 - \`./.plan/[feature-name]/plan.md\` exists
 - Contains the required compact-manifest sections: Request, Global decisions, Phase index, Global verification, Scope boundaries and risks
 - At least one \`phase*.md\` file exists
-- Each phase file includes: scope, implementation outline, and dependencies
+- Each phase file includes: scope, preconditions and invariants, implementation outline, edge cases and failure modes to verify, and dependencies
 
 **Stage 2 (Implementation):**
 
@@ -150,6 +155,7 @@ The ISO-8601 timestamp should be generated at the moment of state update (e.g., 
   "blocked_reason": null,
   "last_completed_action": null,
   "last_updated": "ISO-8601 timestamp",
+  "agent_sessions": {},
   "artifacts": {
     "plan": null,
     "review": null
@@ -191,7 +197,7 @@ On every start:
 - Use when: planning new features, refactoring, architectural decisions.
 - Output: compact \`./.plan/[feature-name]/plan.md\` manifest and \`./.plan/[feature-name]/phase*.md\`
 - Important: For review-driven or late-stage rework, pass research findings and reviewer feedback directly to the planner. Instruct it to update \`plan.md\` as needed and append only new phase files after the highest existing phase number.
-- **Important:** Instruct the planner that this is a no-test workflow. Test strategy sections in phases should be set to "N/A — rapid workflow, no tests required" so the planner doesn't waste effort on test planning.
+- **Important:** Instruct the planner that this is a no-test workflow. Test strategy sections in phases should be set to "N/A — rapid workflow, no tests required", but preconditions, invariants, sequencing, and edge/failure handling should still be explicit enough for a smaller implementation model.
 
 ## fabys-critic
 
@@ -226,13 +232,14 @@ On every start:
 ## Stage 1: Planning
 
 1. If \`state.json\` already records planning as complete and \`artifacts.plan\` exists, skip to Stage 2.
-2. Invoke fabys-planner to analyze the request and create an implementation plan.
+2. Invoke fabys-planner to create or revise the implementation plan.
+   - On the initial invocation, pass the full original user prompt/request unchanged.
+   - On later planning cycles, reuse the same session when available and pass only the current planning artifacts, current workflow state, and critic feedback.
    - Include in the prompt: **"This is a rapid/no-test workflow. Set all test strategy sections to 'N/A — rapid workflow, no tests required'. Focus on implementation clarity and sequential phase ordering."**
-   - On later planning cycles, reuse the same session when available.
 3. Validate output per Stage 1 rules above.
 4. Invoke fabys-critic to review the plan. Increment \`critic_cycles\` in \`state.json\` after each critic pass.
-   - Include in the prompt: **"This is a no-test workflow. Skip test strategy quality checks. Focus on feasibility, scope clarity, implementation completeness, and codebase grounding."**
-   - Changes required and cycle < 3: return to step 2 with critic feedback.
+   - Include in the prompt: **"This is a no-test workflow. Skip test strategy quality checks. Focus on feasibility, scope clarity, implementation completeness, explicit invariants and edge/failure handling, and codebase grounding."**
+   - Changes required and cycle < 3: return to step 2 in revision mode with critic feedback.
    - Changes required and cycle ≥ 3: set \`status: "awaiting_user"\`, record a \`blocked_reason\`, surface the unresolved issues to the user, and stop.
    - On later critic cycles, reuse the same session when available.
 5. Before asking the user to confirm the plan, set \`status: "awaiting_user"\` with \`blocked_reason: "plan confirmation required"\`.

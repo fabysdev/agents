@@ -167,6 +167,60 @@ const VALIDATION_CONTRACT_EXPECTATIONS: Array<{
     forbiddenSnippets: ["Lint and test pass. Coverage >80%. Production-ready."]
   }
 ];
+const PHASE_CONTRACT_EXPECTATIONS: Array<{
+  relativePath: string;
+  requiredSnippets: string[];
+}> = [
+  {
+    relativePath: "fabys-planner.agent.md",
+    requiredSnippets: [
+      "## Preconditions and invariants",
+      "## Edge cases and failure modes to verify",
+      "In test-bearing workflows, the test strategy must explicitly map relevant documented edge/failure scenarios to automated coverage or explain alternate verification",
+      "Use phase files to externalize hidden reasoning"
+    ]
+  },
+  {
+    relativePath: "fabys-critic.agent.md",
+    requiredSnippets: [
+      "**Execution readiness**: Could a downstream implementation or test agent execute the phase directly from the phase file",
+      "Does the test strategy cover the relevant documented edge/failure scenarios or explicitly state alternate verification?",
+      "Treat missing or generic invariants / edge-case / failure-mode sections as a CRITICAL issue when they leave correctness or sequencing implicit"
+    ]
+  },
+  {
+    relativePath: "fabys-implementer.agent.md",
+    requiredSnippets: ["Preconditions and invariants to preserve", "Treat documented invariants and edge/failure cases as part of the contract, not optional guidance"]
+  },
+  {
+    relativePath: "fabys-test-engineer.agent.md",
+    requiredSnippets: [
+      "- Preconditions and invariants",
+      "- Edge cases and failure modes to verify",
+      "Test strategy: behaviors to verify, mock boundaries, test data, and any documented non-automated verification"
+    ]
+  }
+];
+const PLANNING_WORKFLOW_EXPECTATIONS: Array<{
+  relativePath: string;
+  requiredSnippets: string[];
+}> = [
+  {
+    relativePath: "fabys-rapid.agent.md",
+    requiredSnippets: [
+      "Each phase file includes: scope, preconditions and invariants, implementation outline, edge cases and failure modes to verify, and dependencies",
+      "but preconditions, invariants, sequencing, and edge/failure handling should still be explicit enough for a smaller implementation model."
+    ]
+  },
+  {
+    relativePath: "fabys-tdd.agent.md",
+    requiredSnippets: [
+      "Each phase file includes: scope, preconditions and invariants, edge cases and failure modes to verify, test strategy, and dependencies",
+      "On later planning cycles, reuse the same session when available and pass only the current planning artifacts, current workflow state, and critic feedback.",
+      "Each phase must be able to complete a full TDD cycle: write only that phase's failing tests, make them pass, refactor, and leave the suite green before the next phase begins."
+    ]
+  }
+];
 
 describe("template rendering", () => {
   const tools: Tool[] = ["copilot", "opencode", "claude"];
@@ -358,6 +412,38 @@ describe("template rendering", () => {
         }
       });
     }
+
+    for (const expectation of PHASE_CONTRACT_EXPECTATIONS) {
+      it(`${expectation.relativePath} exposes the stronger phase handoff contract`, (): void => {
+        // Arrange
+        const entry = allAgents.find((agent) => agent.relativePath === expectation.relativePath);
+
+        // Assert
+        assert.ok(entry);
+
+        const output: string = entry!.render("copilot");
+
+        for (const snippet of expectation.requiredSnippets) {
+          assert.ok(output.includes(snippet));
+        }
+      });
+    }
+
+    for (const expectation of PLANNING_WORKFLOW_EXPECTATIONS) {
+      it(`${expectation.relativePath} requires explicit invariants and edge cases in planning output`, (): void => {
+        // Arrange
+        const entry = allAgents.find((agent) => agent.relativePath === expectation.relativePath);
+
+        // Assert
+        assert.ok(entry);
+
+        const output: string = entry!.render("copilot");
+
+        for (const snippet of expectation.requiredSnippets) {
+          assert.ok(output.includes(snippet));
+        }
+      });
+    }
   });
 
   describe("skills", () => {
@@ -426,6 +512,20 @@ describe("template rendering", () => {
       assert.ok(entry!.render("copilot").includes("`askQuestions` tool"));
       assert.ok(entry!.render("claude").includes("`AskUserQuestion` tool"));
       assert.ok(entry!.render("opencode").includes("`question` tool"));
+    });
+
+    it("planning skill stays project-specific and does not duplicate agent-level planning rules", (): void => {
+      // Arrange
+      const entry = skills.find((skill) => skill.relativePath === "planning/SKILL.md");
+
+      // Assert
+      assert.ok(entry);
+
+      const output: string = entry!.render("copilot");
+
+      assert.ok(output.includes("Project-specific planning conventions."));
+      assert.ok(!output.includes("smaller downstream implementation model"));
+      assert.ok(!output.includes("Write edge cases as trigger -> expected behavior pairs."));
     });
   });
 
