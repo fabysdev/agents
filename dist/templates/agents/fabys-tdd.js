@@ -85,6 +85,7 @@ Responsibilities:
 
 - Delegate all work to appropriate subagents
 - Always wait for a subagent invocation to fully complete before using its results or proceeding to the next step
+- Reuse the same Stage 1 fabys-planner and fabys-critic sessions across plan revisions when available.
 - Resume from an existing workflow state when \`state.json\` already exists
 - Keep \`state.json\` as the single source of truth for workflow progress
 - Never use file renames as workflow state
@@ -232,10 +233,12 @@ On every start:
 1. If \`state.json\` already records planning as complete and \`artifacts.plan\` exists, skip to Stage 2.
 2. Invoke fabys-planner to analyze the request and create an implementation plan.
    - Include in the prompt: **"Plan self-contained, sequential phases. Each phase must be able to complete a full TDD cycle: write only that phase's failing tests, make them pass, refactor, and leave the suite green before the next phase begins. Avoid plans that depend on future phases having active failing tests."**
+   - On later planning cycles, reuse the same session when available.
 3. Validate output per Stage 1 rules above.
 4. Invoke fabys-critic to review the plan. Increment \`critic_cycles\` in \`state.json\` after each critic pass.
    - Changes required and cycle < 3: return to step 2 with critic feedback.
    - Changes required and cycle ≥ 3: set \`status: "awaiting_user"\`, record a \`blocked_reason\`, surface the unresolved issues to the user, and stop.
+   - On later critic cycles, reuse the same session when available.
 5. Before asking the user to confirm the plan, set \`status: "awaiting_user"\` with \`blocked_reason: "plan confirmation required"\`.
 6. Use the \`fabys-questions\` skill to verify the plan with the user before proceeding to implementation.
    - If the user requests changes, clear the blocked state and return to step 2 with the requested feedback.
@@ -275,7 +278,7 @@ On every start:
    - CHANGES REQUIRED:
      - if reviewer feedback reveals missing coverage or contract gaps for an existing phase, set that phase back to \`pending\`, set \`current_stage: "implementing"\`, clear any active child stage, and return to Stage 2 starting from Red for that phase
      - if reviewer feedback reveals an implementation defect that existing tests already cover, set that phase back to \`red_complete\`, set \`current_stage: "implementing"\`, clear any active child stage, and return to Stage 2 starting from Green for that phase
-     - if the feedback reveals broader work that the current phases do not cover, set \`current_stage: "planning"\` and return to Stage 1 with the reviewer findings
+    - if the feedback reveals broader work that the current phases do not cover, set \`current_stage: "planning"\` and return to Stage 1 with the reviewer findings
      - re-run Stage 3 after rework
 4. Update \`state.json\` before stopping or completing.
 
