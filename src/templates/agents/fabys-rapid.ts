@@ -88,6 +88,7 @@ Responsibilities:
 
 - Delegate all work to appropriate subagents
 - Always wait for a subagent invocation to fully complete before using its results or proceeding to the next step
+- Reuse the same Stage 1 fabys-planner and fabys-critic sessions across plan revisions when available.
 - Resume from an existing workflow state when \`state.json\` already exists
 - Keep \`state.json\` as the single source of truth for workflow progress
 - Never use file renames as workflow state
@@ -227,11 +228,13 @@ On every start:
 1. If \`state.json\` already records planning as complete and \`artifacts.plan\` exists, skip to Stage 2.
 2. Invoke fabys-planner to analyze the request and create an implementation plan.
    - Include in the prompt: **"This is a rapid/no-test workflow. Set all test strategy sections to 'N/A — rapid workflow, no tests required'. Focus on implementation clarity and sequential phase ordering."**
+   - On later planning cycles, reuse the same session when available.
 3. Validate output per Stage 1 rules above.
 4. Invoke fabys-critic to review the plan. Increment \`critic_cycles\` in \`state.json\` after each critic pass.
    - Include in the prompt: **"This is a no-test workflow. Skip test strategy quality checks. Focus on feasibility, scope clarity, implementation completeness, and codebase grounding."**
    - Changes required and cycle < 3: return to step 2 with critic feedback.
    - Changes required and cycle ≥ 3: set \`status: "awaiting_user"\`, record a \`blocked_reason\`, surface the unresolved issues to the user, and stop.
+   - On later critic cycles, reuse the same session when available.
 5. Before asking the user to confirm the plan, set \`status: "awaiting_user"\` with \`blocked_reason: "plan confirmation required"\`.
 6. Use the \`fabys-questions\` skill to verify the plan with the user before proceeding to implementation.
    - If the user requests changes, clear the blocked state and return to step 2 with the requested feedback.
