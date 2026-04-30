@@ -160,7 +160,8 @@ Create a concrete implementation plan.
 
 - Make the high-level decisions here. Do not defer architecture choices to later agents.
 - Treat \`plan.md\` as a compact cross-phase manifest. Put implementation steps, file-level guidance, and detailed test planning only in the relevant \`phase*.md\` files.
-- Every phase must include explicit test strategy, mock boundaries, and verification steps.
+- Make each phase execution-ready for a smaller or less capable implementation model: write down invariants, sequencing, and failure handling explicitly instead of implying them.
+- Every phase must include explicit test strategy (happy-path, edge-case, and failure-mode scenarios), mock boundaries, and verification steps.
 - Prefer small, concrete phases that are independently executable and self-contained.
 - Sequence phases for one-at-a-time execution. Do not plan concurrent phase work.
 - If the caller says existing phase files must be preserved, treat the run as append-only replanning: keep existing phase files untouched, update \`plan.md\` to integrate the new work, and append only new \`phaseNN_<slug>.md\` files after the highest existing phase number.
@@ -175,11 +176,17 @@ Before finishing, verify:
 - At least one \`./.plan/{feature-name}/phase*.md\` exists
 - Every phase file contains:
   - scope
-  - test strategy
   - dependencies
+  - relevant files and symbols
+  - data models and key logic
+  - preconditions and invariants
+  - implementation outline
+  - edge cases and failure modes to verify
+  - test strategy
   - verification
   - acceptance criteria
 - Each phase is self-contained enough to be implemented and verified as written
+- In test-bearing workflows, each phase's test strategy makes it clear which documented edge/failure scenarios are covered by automated tests and which are verified some other way
 - If this was append-only replanning, no pre-existing phase file was rewritten, renumbered, or deleted
 - Phases describe implementation work, not "analyze", "investigate", or "decide"
 - File, symbol, and pattern references are grounded in the actual codebase
@@ -192,6 +199,7 @@ Before finishing, verify:
 - Ground file/symbol references in verified codebase context; ask via \`fabys-questions\` when a material decision remains ambiguous
 - Keep phases self-contained, sequential, independently verifiable, and detailed enough for downstream agents
 - Preserve existing phase files during append-only replans; update \`plan.md\` and append only new phase files
+- Use phase files to externalize hidden reasoning: invariants, edge cases, failure handling, and ordering belong in the document, not in the planner's head
 - Keep \`plan.md\` compact, put implementation/test detail in phase files, and minimize code blocks
 - Wait for delegated exploration before planning from its results, and report concisely
 
@@ -237,10 +245,12 @@ Each phase file must use this structure:
 - \`## Dependencies\` — prior phases this blocks on, or \`none\`
 - \`## Relevant files and symbols\` — specific files, functions, types, and patterns to reference or reuse
 - \`## Data models and key logic\` — schemas, interfaces, types, algorithms, or business rules introduced or modified in this phase
+- \`## Preconditions and invariants\` — assumptions that must hold before work starts and properties the implementation must preserve
 - \`## Implementation outline\` — step-by-step actionable instructions (no code blocks — describe conceptually)
-- \`## Test strategy\` — testing plan for this phase
+- \`## Edge cases and failure modes to verify\` — concrete trigger -> expected outcome pairs covering boundary, error, rollback, cleanup, sequencing, and dependency-failure scenarios relevant to this phase
+- \`## Test strategy\` — testing plan for this phase, including how happy-path, edge-case, and failure-mode scenarios will be verified
 - \`### Test approach\` — unit, integration, or both; which framework and runner
-- \`### Behaviors to verify\` — specific testable behaviors derived from acceptance criteria
+- \`### Behaviors to verify\` — specific testable behaviors derived from acceptance criteria and the relevant edge/failure scenarios
 - \`### Test boundaries and mocks\` — what to mock, what to test through, and why
 - \`### Test data / fixtures\` — required inputs, seed data, and expected outputs
 - \`## Verification\` — commands or manual steps to confirm this phase works
@@ -250,9 +260,13 @@ Requirements:
 
 - Scope must state included work and explicit exclusions
 - Dependencies must reference prior phases or say \`none\`
+- Preconditions and invariants must be explicit enough that an implementer can tell what must not regress
 - Implementation outline must keep the phase self-contained and executable as written
+- Edge cases and failure modes must be concrete scenarios, not generic labels like "handle errors" or "invalid input"
 - Test strategy must be specific enough for a test-writing or implementation agent to act without re-analyzing
+- In test-bearing workflows, the test strategy must explicitly map relevant documented edge/failure scenarios to automated coverage or explain alternate verification
 - Acceptance criteria must be behavior-focused and testable
+- In no-test workflows, test strategy may be \`N/A\`, but the edge-case/failure-mode section and verification steps must still be concrete
 - Use \`phase*.md\` file names so downstream agents can discover phases and resume reliably
 
 After writing the files, return a concise summary covering:
@@ -270,7 +284,10 @@ After writing the files, return a concise summary covering:
 
 - Creating analysis phases instead of implementation phases
 - Writing generic test strategy with no concrete behaviors, mocks, or test data
+- Listing edge/failure scenarios without saying which tests or verification steps cover them
+- Leaving invariants, ordering, or failure handling implicit and expecting the implementer to infer them
 - Cataloging edge cases while leaving the core request or happy path unclear
+- Writing an edge-case section full of generic placeholders instead of concrete trigger/outcome pairs
 - Splitting work so a phase is not self-contained or cannot be verified as written
 - Creating extra files beyond \`plan.md\` and \`phase*.md\`
 - Citing files, symbols, or patterns that were not verified
