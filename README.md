@@ -2,8 +2,8 @@
 
 My opinionated AI workflow for coding.
 
-- Agents for planning, implementation, review, TDD orchestration, and rapid orchestration
-- Workflow skills for `/tdd`, `/rapid`, and `/dev`
+- Agents for planning, compact implementation, implementation, review, TDD orchestration, and rapid orchestration
+- Workflow skills for `/tdd`, `/rapid`, `/impl`, and `/dev`
 - Portability skills for exploration and user questions across GitHub Copilot, OpenCode, and Claude Code
 - Role-specific skills for exploration, planning, implementation, review, test engineering, and test consolidation
 - Validation skills for linting and testing
@@ -22,7 +22,7 @@ On TTYs, the installer also shows a checklist for the optional project-specific 
 
 Pass `--force` to also overwrite `lint`, `test`, and the selected optional project-specific skills.
 
-Re-running the installer always overwrites agent files, refreshes the shared portability skills (`fabys-exploration`, `fabys-questions`), and refreshes the workflow skills (`dev`, `rapid`, `tdd`).
+Re-running the installer always overwrites agent files, refreshes the shared portability skills (`fabys-exploration`, `fabys-questions`), and refreshes the workflow skills (`dev`, `impl`, `rapid`, `tdd`).
 `lint`, `test`, and the selected optional project-specific skills are preserved by default and only overwritten with `--force`.
 
 ### Configuration
@@ -93,6 +93,7 @@ Works best when planning, orchestration, and final review stay on stronger model
 | ------------------------- | ----------------- | ---------------- |
 | `fabys-critic`            | `gpt-5.4`         | `xhigh`          |
 | `fabys-explorer`          | `gpt-5.4-mini`    | `low`            |
+| `fabys-impl`              | `gpt-5.4`         | `high`           |
 | `fabys-implementer`       | `gpt-5.4`         | `high`           |
 | `fabys-planner`           | `gpt-5.5`         | `high`           |
 | `fabys-rapid`             | `gpt-5.4`         | `high`           |
@@ -107,6 +108,7 @@ Works best when planning, orchestration, and final review stay on stronger model
 | ------------------------- | ----------------- | ---------------- |
 | `fabys-critic`            | `gpt-5.5`         | `high`           |
 | `fabys-explorer`          | `gpt-5.4-mini`    | `low`            |
+| `fabys-impl`              | `gpt-5.5`         | `high`           |
 | `fabys-implementer`       | `gpt-5.5`         | `high`           |
 | `fabys-planner`           | `gpt-5.5`         | `high`           |
 | `fabys-rapid`             | `gpt-5.5`         | `medium`         |
@@ -117,7 +119,7 @@ Works best when planning, orchestration, and final review stay on stronger model
 
 ## Usage
 
-These are the three entrypoints I use.
+These are the four entrypoints I use.
 
 ### Claude Code Operating Model
 
@@ -126,9 +128,10 @@ Claude Code works best here as short-lived top-level sessions with `.plan/<featu
 - Install with `--tool claude`.
 - Create one git worktree per feature or bug fix.
 - Start a fresh top-level Claude Code session for each workflow stage you want to run.
-- Use `fabys-tdd` or `fabys-rapid` in that session, and treat `.plan/<feature-name>/state.json` plus the generated plan artifacts as the handoff to the next session.
+- Use `fabys-tdd`, `fabys-rapid`, or `fabys-impl` in that session, and treat `.plan/<feature-name>/state.json` plus the generated plan artifacts as the handoff to the next session when the workflow produces them.
 - For `/tdd`, keep Stage 2 (Implementation) in the same session because the orchestrator is designed to run Red then Green for each phase before moving to the next one.
 - For `/rapid`, splitting Planning, Implementation, and optional Review into separate sessions is a good default.
+- For `/impl`, one session is usually enough; switch to artifact mode only when you want resumability or an explicit review trail.
 
 ### TDD Workflow
 
@@ -162,6 +165,22 @@ Example:
 scaffold a new CLI command for syncing templates
 ```
 
+### Impl Workflow
+
+This route keeps compact planning and implementation in the main session, requires tests and lint before completion, and only delegates isolated side work when it helps.
+
+- Prompt: `/impl <request>`
+- Agent: `fabys-impl`
+- Workflow: Compact Planning -> Implementation -> Validation -> Bounded Review when warranted
+- Best for: medium-sized changes that need tests and lint but do not need the full phased TDD workflow
+
+Example:
+
+```text
+/impl
+add an alias for the rapid skill installer path and cover it with tests
+```
+
 ### Small Direct Change
 
 `/dev` is the quickest path when the work is small and you just want the change implemented cleanly with tests and lint handled before finishing.
@@ -187,11 +206,12 @@ The orchestrated workflows use `.plan/<feature-name>/` as their working director
 - `state.json` tracks workflow progress and resume state
 - `review.md` stores the final review output when a review stage runs
 
-This directory is primarily used by `/tdd` and `/rapid`. `/dev` is the direct path and normally does not need `.plan/` artifacts.
+This directory is primarily used by `/tdd`, `/rapid`, and longer `/impl` runs. `/dev` is the direct path and normally does not need `.plan/` artifacts, while `/impl` can often stay inline unless resumability matters.
 
 ## Recommended Default
 
 - Use `/tdd` when correctness and regression safety matter most
+- Use `/impl` for medium-sized changes that need tests and lint without full TDD orchestration
 - Use `/dev` for small direct changes
 - Use `/rapid` when you want structure without the TDD overhead
 - On Claude Code, use one worktree per feature, prefer fresh top-level sessions per workflow stage, and scale parallel work by adding worktrees rather than nesting more workers

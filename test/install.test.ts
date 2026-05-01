@@ -17,6 +17,7 @@ const EXPECTED_SKILL_PATHS: string[] = [
   "exploration/SKILL.md",
   "fabys-exploration/SKILL.md",
   "fabys-questions/SKILL.md",
+  "impl/SKILL.md",
   "implementation/SKILL.md",
   "lint/SKILL.md",
   "planning/SKILL.md",
@@ -29,7 +30,7 @@ const EXPECTED_SKILL_PATHS: string[] = [
 ].sort();
 const EXPECTED_FABYS_SKILL_PATHS: string[] = EXPECTED_SKILL_PATHS.filter((relativePath) => relativePath.startsWith("fabys-"));
 const EXPECTED_MANDATORY_SKILL_PATHS: string[] = ["lint/SKILL.md", "test/SKILL.md"];
-const EXPECTED_WORKFLOW_SKILL_PATHS: string[] = ["dev/SKILL.md", "rapid/SKILL.md", "tdd/SKILL.md"];
+const EXPECTED_WORKFLOW_SKILL_PATHS: string[] = ["dev/SKILL.md", "impl/SKILL.md", "rapid/SKILL.md", "tdd/SKILL.md"];
 const DEFAULT_OPTIONAL_PROJECT_SKILLS: string[] = optionalProjectSkills.map(({name}) => name);
 const REQUIRED_SKILL_FRONTMATTER_KEYS: string[] = ["name", "description"];
 const SUPPORTED_CLAUDE_SKILL_FRONTMATTER_KEYS: string[] = ["argument-hint", "description", "disable-model-invocation", "name", "user-invocable"];
@@ -97,6 +98,10 @@ const PORTABILITY_INSTRUCTION_EXPECTATIONS: Array<{
     requiredSnippets: ["`fabys-questions` skill"]
   },
   {
+    relativePath: "fabys-impl.agent.md",
+    requiredSnippets: ["`fabys-exploration` skill", "`fabys-questions` skill"]
+  },
+  {
     relativePath: "fabys-implementer.agent.md",
     requiredSnippets: ["`fabys-exploration` skill"]
   },
@@ -130,6 +135,22 @@ const WORKFLOW_STATE_EXPECTATIONS: Array<{
   requiredSnippets: string[];
   forbiddenSnippets: string[];
 }> = [
+  {
+    relativePath: "fabys-impl.agent.md",
+    requiredSnippets: [
+      'Keep `state.json` as the single source of truth for resumable "/impl" runs',
+      '"workflow": "impl"',
+      '"status": "planning"',
+      '"current_stage": "planning"',
+      '"last_review_file": null',
+      '"last_review_verdict": null',
+      '"needs_rereview": false',
+      '"review_replan_pending": false',
+      '"latest_review": null',
+      'If no `state.json` exists, treat the run as a new or one-session "/impl" workflow.'
+    ],
+    forbiddenSnippets: ["COMPLETE_*", "RED_*"]
+  },
   {
     relativePath: "fabys-rapid.agent.md",
     requiredSnippets: [
@@ -202,6 +223,27 @@ const REVIEW_ROUTING_EXPECTATIONS: Array<{
     requiredSnippets: ["review-01.md", "Route: APPEND_PHASES", "Route: REPLAN_REQUIRED"]
   }
 ];
+const INLINE_IMPL_REVIEW_EXPECTATIONS: Array<{
+  relativePath: string;
+  requiredSnippets: string[];
+}> = [
+  {
+    relativePath: "fabys-impl.agent.md",
+    requiredSnippets: [
+      "For inline mode, include the request summary, key design decisions, review mode, validation results, changed files or diffs, whether tests are in scope and whether review findings should stay inline or be written to a durable artifact.",
+      "When delegating from inline mode, explicitly pass the inline plan summary, key decisions, changed files or diffs, validation results, and whether tests are in scope."
+    ]
+  },
+  {
+    relativePath: "fabys-reviewer.agent.md",
+    requiredSnippets: [
+      "If no planning artifacts exist, use the provided request summary, review scope, changed files, diffs, key design decisions, and validation results as the source of truth",
+      "Artifact-light reviews: save the review report to `./.plan/[feature]/review.md` only when the caller asked for a durable artifact or the findings are worth preserving.",
+      "Inline reviews: do not create a review file; return the review in your response.",
+      "If there are no phase files, create no rework phases; keep required follow-up in the review findings and let the caller decide whether to re-enter planning."
+    ]
+  }
+];
 const VALIDATION_CONTRACT_EXPECTATIONS: Array<{
   relativePath: string;
   requiredSnippets: string[];
@@ -262,6 +304,16 @@ const PLANNING_WORKFLOW_EXPECTATIONS: Array<{
   requiredSnippets: string[];
 }> = [
   {
+    relativePath: "fabys-impl.agent.md",
+    requiredSnippets: [
+      "The plan should capture: request summary, key design decisions, relevant files and patterns, validation strategy, test expectations, and sequencing constraints.",
+      "For one-session work, keep the plan in the conversation.",
+      "Present the current plan to the user every time, explicitly stating whether it is inline or artifact mode and why that mode was chosen, alongside the inline mode summary or artifact mode plan.",
+      "Use the `fabys-questions` skill to ask for explicit approval before implementation begins.",
+      'Do not create `phase*.md` files for ordinary "/impl" work.'
+    ]
+  },
+  {
     relativePath: "fabys-rapid.agent.md",
     requiredSnippets: [
       "Each phase file includes: scope, preconditions and invariants, implementation outline, edge cases and failure modes to verify, and dependencies",
@@ -274,6 +326,19 @@ const PLANNING_WORKFLOW_EXPECTATIONS: Array<{
       "Each phase file includes: scope, preconditions and invariants, edge cases and failure modes to verify, test strategy, and dependencies",
       "On later planning cycles, reuse the same session when available and pass only the current planning artifacts, current workflow state, and critic feedback.",
       "Each phase must be able to complete a full TDD cycle: write only that phase's failing tests, make them pass, refactor, and leave the suite green before the next phase begins."
+    ]
+  }
+];
+const USER_GATE_EXPECTATIONS: Array<{
+  relativePath: string;
+  requiredSnippets: string[];
+}> = [
+  {
+    relativePath: "fabys-impl.agent.md",
+    requiredSnippets: [
+      "Use the `fabys-questions` skill whenever you need explicit user approval or a user decision point; always present the plan, get explicit approval before implementation, and ask whether review should run",
+      "Always use the `fabys-questions` skill to ask the user whether review should be run, even when your default assessment is that review is unnecessary.",
+      "If the user declines review, skip it and proceed without adding extra ceremony."
     ]
   }
 ];
@@ -501,8 +566,40 @@ describe("template rendering", () => {
       });
     }
 
+    for (const expectation of USER_GATE_EXPECTATIONS) {
+      it(`${expectation.relativePath} enforces explicit user approval and review decisions`, (): void => {
+        // Arrange
+        const entry = allAgents.find((agent) => agent.relativePath === expectation.relativePath);
+
+        // Assert
+        assert.ok(entry);
+
+        const output: string = entry!.render("copilot");
+
+        for (const snippet of expectation.requiredSnippets) {
+          assert.ok(output.includes(snippet));
+        }
+      });
+    }
+
     for (const expectation of REVIEW_ROUTING_EXPECTATIONS) {
       it(`${expectation.relativePath} supports numbered review routing and append-only follow-up work`, (): void => {
+        // Arrange
+        const entry = allAgents.find((agent) => agent.relativePath === expectation.relativePath);
+
+        // Assert
+        assert.ok(entry);
+
+        const output: string = entry!.render("copilot");
+
+        for (const snippet of expectation.requiredSnippets) {
+          assert.ok(output.includes(snippet));
+        }
+      });
+    }
+
+    for (const expectation of INLINE_IMPL_REVIEW_EXPECTATIONS) {
+      it(`${expectation.relativePath} supports inline /impl review handoff without plan artifacts`, (): void => {
         // Arrange
         const entry = allAgents.find((agent) => agent.relativePath === expectation.relativePath);
 
@@ -584,6 +681,19 @@ describe("template rendering", () => {
       assert.ok(entry!.render("copilot").includes("`askQuestions` tool"));
       assert.ok(entry!.render("claude").includes("`AskUserQuestion` tool"));
       assert.ok(entry!.render("opencode").includes("`question` tool"));
+    });
+
+    it("impl skill tells the workflow to implement the user request", (): void => {
+      // Arrange
+      const entry = skills.find((skill) => skill.relativePath === "impl/SKILL.md");
+
+      // Assert
+      assert.ok(entry);
+
+      const output: string = entry!.render("copilot");
+
+      assert.ok(output.includes("Implement the user request through your workflow."));
+      assert.ok(!output.includes("Delegate the user request through your workflow."));
     });
 
     it("planning skill stays project-specific and does not duplicate agent-level planning rules", (): void => {

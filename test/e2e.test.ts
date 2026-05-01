@@ -12,13 +12,13 @@ const REPO_ROOT: string = path.resolve(import.meta.dirname, "..");
 const BIN_PATH: string = path.join(REPO_ROOT, "dist", "cli.js");
 const CLAUDE_MODEL_PATTERN = /model:\s+claude-[\w.-]+/;
 const OPENCODE_MODEL_PATTERN = /model:\s+\S+\/\S+/;
-const EXPECTED_SKILL_COUNT = 13;
+const EXPECTED_SKILL_COUNT = 14;
 const EXPECTED_FABYS_SKILL_PATHS: string[] = skills
   .map((skill) => skill.relativePath)
   .filter((relativePath) => relativePath.startsWith("fabys-"))
   .sort();
 const EXPECTED_MANDATORY_SKILL_PATHS: string[] = ["lint/SKILL.md", "test/SKILL.md"];
-const EXPECTED_WORKFLOW_SKILL_PATHS: string[] = ["dev/SKILL.md", "rapid/SKILL.md", "tdd/SKILL.md"];
+const EXPECTED_WORKFLOW_SKILL_PATHS: string[] = ["dev/SKILL.md", "impl/SKILL.md", "rapid/SKILL.md", "tdd/SKILL.md"];
 const REQUIRED_SKILL_FRONTMATTER_KEYS: string[] = ["name", "description"];
 const SUPPORTED_CLAUDE_SKILL_FRONTMATTER_KEYS: string[] = ["argument-hint", "description", "disable-model-invocation", "name", "user-invocable"];
 const SUPPORTED_TOOLS = ["copilot", "opencode", "claude"] as const;
@@ -48,7 +48,7 @@ describe("install script e2e", () => {
 
     // Assert
     assert.strictEqual(SUPPORTED_TOOLS.length, 3);
-    assert.strictEqual(expectedAgentFiles.length, 9);
+    assert.strictEqual(expectedAgentFiles.length, 10);
     assert.strictEqual(expectedSkillFiles.length, EXPECTED_SKILL_COUNT);
     assert.strictEqual(EXPECTED_FABYS_SKILL_PATHS.length, 2);
     assert.ok(expectedSkillFiles.includes("fabys-exploration/SKILL.md"));
@@ -193,7 +193,7 @@ describe("install script e2e", () => {
     const stdout: string = runInstaller(tempDir, ["--tool", "opencode"]);
 
     // Assert
-    assert.match(stdout, new RegExp(`Installed\\s+for\\s+opencode:\\s+${agents.length}\\s+agents,\\s+11\\s+skills\\s+\\(0\\s+skipped existing\\)`));
+    assert.match(stdout, new RegExp(`Installed\\s+for\\s+opencode:\\s+${agents.length}\\s+agents,\\s+12\\s+skills\\s+\\(0\\s+skipped existing\\)`));
     assert.deepStrictEqual(
       collectRelativeFiles(path.join(tempDir, ".opencode", "skills")),
       buildExpectedInstalledSkillPaths(["implementation", "planning", "test-consolidation", "test-engineering"])
@@ -254,7 +254,7 @@ describe("install script e2e", () => {
     const stdout: string = runInstaller(runnerDir, ["--tool", "claude", "--config", projectRoot]);
 
     // Assert
-    assert.match(stdout, new RegExp(`Installed\\s+for\\s+claude:\\s+${agents.length}\\s+agents,\\s+12\\s+skills\\s+\\(0\\s+skipped existing\\)`));
+    assert.match(stdout, new RegExp(`Installed\\s+for\\s+claude:\\s+${agents.length}\\s+agents,\\s+13\\s+skills\\s+\\(0\\s+skipped existing\\)`));
     assert.ok(!fs.existsSync(path.join(runnerDir, ".claude")));
     assert.ok(fs.existsSync(path.join(projectRoot, ".claude", "agents")));
     assert.deepStrictEqual(

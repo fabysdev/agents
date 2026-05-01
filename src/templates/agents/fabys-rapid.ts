@@ -72,6 +72,7 @@ tools:
 permission:
   skill:
     dev: deny
+    impl: deny
     tdd: deny
     planning: deny
     test-engineering: deny
