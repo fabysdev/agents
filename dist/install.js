@@ -28,7 +28,7 @@ export const optionalProjectSkills = [
     }
 ];
 const FABYS_SKILL_PREFIX = "fabys-";
-const WORKFLOW_SKILL_NAMES = new Set(["dev", "rapid", "tdd"]);
+const WORKFLOW_SKILL_NAMES = new Set(["dev", "impl", "rapid", "tdd"]);
 const MANDATORY_PROJECT_SKILL_NAMES = new Set(["lint", "test"]);
 const OPTIONAL_PROJECT_SKILL_NAMES = new Set(optionalProjectSkills.map(({ name }) => name));
 const RETIRED_AGENT_FILES = ["fabys-analyst.agent.md"];

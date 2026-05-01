@@ -60,6 +60,7 @@ tools:
 permission:
   skill:
     dev: deny
+    impl: deny
     rapid: deny
     tdd: deny`;
             break;
