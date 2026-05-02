@@ -22,6 +22,7 @@ import * as testConsolidator from "./agents/fabys-test-consolidator.js";
 import * as testEngineer from "./agents/fabys-test-engineer.js";
 
 import * as fabysExplorationSkill from "./skills/fabys-exploration.js";
+import * as fabysPlanningSkill from "./skills/fabys-planning.js";
 import * as fabysQuestionsSkill from "./skills/fabys-questions.js";
 import * as devSkill from "./skills/dev.js";
 import * as explorationSkill from "./skills/exploration.js";
@@ -42,6 +43,7 @@ export const allAgents: TemplateEntry[] = [analyst, ...agents];
 
 export const skills: TemplateEntry[] = [
   fabysExplorationSkill,
+  fabysPlanningSkill,
   fabysQuestionsSkill,
   devSkill,
   implSkill,

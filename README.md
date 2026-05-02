@@ -4,7 +4,7 @@ My opinionated AI workflow for coding.
 
 - Agents for planning, compact implementation, implementation, review, TDD orchestration, and rapid orchestration
 - Workflow skills for `/tdd`, `/rapid`, `/impl`, and `/dev`
-- Portability skills for exploration and user questions across GitHub Copilot, OpenCode, and Claude Code
+- Portability skills for exploration, planning, and user questions across GitHub Copilot, OpenCode, and Claude Code
 - Role-specific skills for exploration, planning, implementation, review, test engineering, and test consolidation
 - Validation skills for linting and testing
 
@@ -22,7 +22,7 @@ On TTYs, the installer also shows a checklist for the optional project-specific 
 
 Pass `--force` to also overwrite `lint`, `test`, and the selected optional project-specific skills.
 
-Re-running the installer always overwrites agent files, refreshes the shared portability skills (`fabys-exploration`, `fabys-questions`), and refreshes the workflow skills (`dev`, `impl`, `rapid`, `tdd`).
+Re-running the installer always overwrites agent files, refreshes the shared portability skills (`fabys-exploration`, `fabys-planning`, `fabys-questions`), and refreshes the workflow skills (`dev`, `impl`, `rapid`, `tdd`).
 `lint`, `test`, and the selected optional project-specific skills are preserved by default and only overwritten with `--force`.
 
 ### Configuration
@@ -75,7 +75,7 @@ Each agent loads a matching skill to pick up project-specific conventions. The i
 | Skill                | Used by                                      | Purpose                                                         |
 | -------------------- | -------------------------------------------- | --------------------------------------------------------------- |
 | `exploration`        | fabys-explorer                               | Search priorities, exclusions, and discovery hints              |
-| `planning`           | fabys-planner                                | Planning constraints, phase structure, and quality bars         |
+| `planning`           | fabys-planner, fabys-impl                    | Planning constraints, phase structure, and quality bars         |
 | `implementation`     | fabys-implementer                            | Architecture, coding standards, and validation requirements     |
 | `review`             | fabys-reviewer                               | Review rules that override generic heuristics                   |
 | `test-engineering`   | fabys-test-engineer, fabys-test-consolidator | Coverage expectations, mocking boundaries, and test conventions |

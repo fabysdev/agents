@@ -16,6 +16,7 @@ const EXPECTED_SKILL_PATHS: string[] = [
   "dev/SKILL.md",
   "exploration/SKILL.md",
   "fabys-exploration/SKILL.md",
+  "fabys-planning/SKILL.md",
   "fabys-questions/SKILL.md",
   "impl/SKILL.md",
   "implementation/SKILL.md",
@@ -99,7 +100,7 @@ const PORTABILITY_INSTRUCTION_EXPECTATIONS: Array<{
   },
   {
     relativePath: "fabys-impl.agent.md",
-    requiredSnippets: ["`fabys-exploration` skill", "`fabys-questions` skill"]
+    requiredSnippets: ["`fabys-exploration` skill", "`fabys-planning` skill", "`fabys-questions` skill"]
   },
   {
     relativePath: "fabys-implementer.agent.md",
@@ -306,7 +307,9 @@ const PLANNING_WORKFLOW_EXPECTATIONS: Array<{
   {
     relativePath: "fabys-impl.agent.md",
     requiredSnippets: [
-      "The plan should capture: request summary, key design decisions, relevant files and patterns, validation strategy, test expectations, and sequencing constraints.",
+      "Use the `fabys-planning` skill for the required planning result, grounding expectations, and plan quality bar.",
+      "Use the `planning` skill, if available, to load project-specific planning conventions.",
+      "The plan should capture: grounded references, explicit invariants and edge cases where relevant, and request summary, key design decisions, relevant files and patterns, validation strategy, test expectations, sequencing constraints, plus any material risks or open questions.",
       "For one-session work, keep the plan in the conversation.",
       "Present the current plan to the user every time, explicitly stating whether it is inline or artifact mode and why that mode was chosen, alongside the inline mode summary or artifact mode plan.",
       "Use the `fabys-questions` skill to ask for explicit approval before implementation begins.",
@@ -1275,12 +1278,14 @@ describe("install", () => {
     const existingTestContent: string = "---\nname: test\n---\nProject-specific test instructions\n";
     const existingExplorationContent: string = "---\nname: exploration\n---\nProject-specific exploration instructions\n";
     const existingFabysExplorationContent: string = "---\nname: fabys-exploration\n---\nOutdated shared exploration workflow\n";
+    const existingFabysPlanningContent: string = "---\nname: fabys-planning\n---\nOutdated shared planning workflow\n";
 
     writeFile(targetBase, path.join("skills", "dev", "SKILL.md"), existingDevContent);
     writeFile(targetBase, path.join("skills", "lint", "SKILL.md"), existingLintContent);
     writeFile(targetBase, path.join("skills", "test", "SKILL.md"), existingTestContent);
     writeFile(targetBase, path.join("skills", "exploration", "SKILL.md"), existingExplorationContent);
     writeFile(targetBase, path.join("skills", "fabys-exploration", "SKILL.md"), existingFabysExplorationContent);
+    writeFile(targetBase, path.join("skills", "fabys-planning", "SKILL.md"), existingFabysPlanningContent);
 
     // Act
     install({targetBase, tool: "copilot"});
@@ -1291,6 +1296,7 @@ describe("install", () => {
     assert.strictEqual(fs.readFileSync(path.join(targetBase, "skills", "test", "SKILL.md"), "utf8"), existingTestContent);
     assert.strictEqual(fs.readFileSync(path.join(targetBase, "skills", "exploration", "SKILL.md"), "utf8"), existingExplorationContent);
     assert.strictEqual(fs.readFileSync(path.join(targetBase, "skills", "fabys-exploration", "SKILL.md"), "utf8"), findSkillTemplate("fabys-exploration/SKILL.md").render("copilot"));
+    assert.strictEqual(fs.readFileSync(path.join(targetBase, "skills", "fabys-planning", "SKILL.md"), "utf8"), findSkillTemplate("fabys-planning/SKILL.md").render("copilot"));
   });
 
   it("installs only the selected optional project skills alongside mandatory, workflow, and fabys skills", (): void => {
@@ -1678,9 +1684,11 @@ describe("install", () => {
       // Arrange
       const targetClaudeBase: string = path.join(tempRoot, "target-project", ".claude");
       const existingExplorationContent: string = "---\nname: fabys-exploration\n---\nGather context locally inside the current Claude worker.\n";
+      const existingPlanningContent: string = "---\nname: fabys-planning\n---\nDraft a quick plan and move on.\n";
       const existingQuestionsContent: string = "---\nname: fabys-questions\n---\nAsk the user only when the answer materially changes the work.\n";
 
       writeFile(targetClaudeBase, path.join("skills", "fabys-exploration", "SKILL.md"), existingExplorationContent);
+      writeFile(targetClaudeBase, path.join("skills", "fabys-planning", "SKILL.md"), existingPlanningContent);
       writeFile(targetClaudeBase, path.join("skills", "fabys-questions", "SKILL.md"), existingQuestionsContent);
 
       // Act
@@ -1691,6 +1699,7 @@ describe("install", () => {
 
       // Assert
       assert.strictEqual(fs.readFileSync(path.join(targetClaudeBase, "skills", "fabys-exploration", "SKILL.md"), "utf8"), findSkillTemplate("fabys-exploration/SKILL.md").render("claude"));
+      assert.strictEqual(fs.readFileSync(path.join(targetClaudeBase, "skills", "fabys-planning", "SKILL.md"), "utf8"), findSkillTemplate("fabys-planning/SKILL.md").render("claude"));
       assert.strictEqual(fs.readFileSync(path.join(targetClaudeBase, "skills", "fabys-questions", "SKILL.md"), "utf8"), findSkillTemplate("fabys-questions/SKILL.md").render("claude"));
     });
 

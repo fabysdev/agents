@@ -12,7 +12,7 @@ const REPO_ROOT: string = path.resolve(import.meta.dirname, "..");
 const BIN_PATH: string = path.join(REPO_ROOT, "dist", "cli.js");
 const CLAUDE_MODEL_PATTERN = /model:\s+claude-[\w.-]+/;
 const OPENCODE_MODEL_PATTERN = /model:\s+\S+\/\S+/;
-const EXPECTED_SKILL_COUNT = 14;
+const EXPECTED_SKILL_COUNT = 15;
 const EXPECTED_FABYS_SKILL_PATHS: string[] = skills
   .map((skill) => skill.relativePath)
   .filter((relativePath) => relativePath.startsWith("fabys-"))
@@ -50,8 +50,9 @@ describe("install script e2e", () => {
     assert.strictEqual(SUPPORTED_TOOLS.length, 3);
     assert.strictEqual(expectedAgentFiles.length, 10);
     assert.strictEqual(expectedSkillFiles.length, EXPECTED_SKILL_COUNT);
-    assert.strictEqual(EXPECTED_FABYS_SKILL_PATHS.length, 2);
+    assert.strictEqual(EXPECTED_FABYS_SKILL_PATHS.length, 3);
     assert.ok(expectedSkillFiles.includes("fabys-exploration/SKILL.md"));
+    assert.ok(expectedSkillFiles.includes("fabys-planning/SKILL.md"));
     assert.ok(expectedSkillFiles.includes("fabys-questions/SKILL.md"));
     assert.ok(!expectedAgentFiles.includes("fabys-analyst.agent.md"));
 
@@ -121,7 +122,8 @@ describe("install script e2e", () => {
       ["dev/SKILL.md", "---\nname: dev\n---\nStale workflow instructions.\n"],
       ["exploration/SKILL.md", "---\nname: custom-exploration\n---\nPrefer ripgrep and skip generated directories.\n"],
       ["test/SKILL.md", "---\nname: custom-test\n---\nRun the repository test workflow.\n"],
-      ["fabys-exploration/SKILL.md", "---\nname: fabys-exploration\n---\nStale shared exploration rules.\n"]
+      ["fabys-exploration/SKILL.md", "---\nname: fabys-exploration\n---\nStale shared exploration rules.\n"],
+      ["fabys-planning/SKILL.md", "---\nname: fabys-planning\n---\nStale shared planning rules.\n"]
     ]);
 
     for (const [relativePath, content] of customSkillContents) {
@@ -138,6 +140,10 @@ describe("install script e2e", () => {
     assert.strictEqual(
       fs.readFileSync(path.join(tempDir, ".github", "skills", "fabys-exploration", "SKILL.md"), "utf8"),
       skills.find((skill) => skill.relativePath === "fabys-exploration/SKILL.md")!.render("copilot")
+    );
+    assert.strictEqual(
+      fs.readFileSync(path.join(tempDir, ".github", "skills", "fabys-planning", "SKILL.md"), "utf8"),
+      skills.find((skill) => skill.relativePath === "fabys-planning/SKILL.md")!.render("copilot")
     );
   });
 
@@ -193,7 +199,7 @@ describe("install script e2e", () => {
     const stdout: string = runInstaller(tempDir, ["--tool", "opencode"]);
 
     // Assert
-    assert.match(stdout, new RegExp(`Installed\\s+for\\s+opencode:\\s+${agents.length}\\s+agents,\\s+12\\s+skills\\s+\\(0\\s+skipped existing\\)`));
+    assert.match(stdout, new RegExp(`Installed\\s+for\\s+opencode:\\s+${agents.length}\\s+agents,\\s+13\\s+skills\\s+\\(0\\s+skipped existing\\)`));
     assert.deepStrictEqual(
       collectRelativeFiles(path.join(tempDir, ".opencode", "skills")),
       buildExpectedInstalledSkillPaths(["implementation", "planning", "test-consolidation", "test-engineering"])
@@ -254,7 +260,7 @@ describe("install script e2e", () => {
     const stdout: string = runInstaller(runnerDir, ["--tool", "claude", "--config", projectRoot]);
 
     // Assert
-    assert.match(stdout, new RegExp(`Installed\\s+for\\s+claude:\\s+${agents.length}\\s+agents,\\s+13\\s+skills\\s+\\(0\\s+skipped existing\\)`));
+    assert.match(stdout, new RegExp(`Installed\\s+for\\s+claude:\\s+${agents.length}\\s+agents,\\s+14\\s+skills\\s+\\(0\\s+skipped existing\\)`));
     assert.ok(!fs.existsSync(path.join(runnerDir, ".claude")));
     assert.ok(fs.existsSync(path.join(projectRoot, ".claude", "agents")));
     assert.deepStrictEqual(
