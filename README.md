@@ -11,10 +11,10 @@ My opinionated AI workflow for coding.
 ## Installation
 
 ```bash
-npx github:fabysdev/agents#v0.22.0 --tool copilot
-npx github:fabysdev/agents#v0.22.0 --tool opencode
-npx github:fabysdev/agents#v0.22.0 --tool claude
-npx github:fabysdev/agents#v0.22.0 --tool copilot --force
+npx github:fabysdev/agents#v0.23.0 --tool copilot
+npx github:fabysdev/agents#v0.23.0 --tool opencode
+npx github:fabysdev/agents#v0.23.0 --tool claude
+npx github:fabysdev/agents#v0.23.0 --tool copilot --force
 ```
 
 If you omit `--tool`, the installer prompts on TTYs and defaults to Copilot in non-interactive environments.
