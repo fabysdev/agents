@@ -75,7 +75,8 @@ permission:
     test-engineering: deny
     implementation: deny
     review: deny
-    exploration: deny`;
+    exploration: deny
+    fabys-planning: deny`;
             break;
     }
     return `---

@@ -63,7 +63,8 @@ permission:
     dev: deny
     impl: deny
     rapid: deny
-    tdd: deny`;
+    tdd: deny
+    fabys-planning: deny`;
             break;
     }
     return `---
