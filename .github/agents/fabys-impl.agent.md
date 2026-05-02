@@ -32,9 +32,9 @@ You must require tests for changed behavior and full validation before declaring
 Responsibilities:
 
 - Keep shared-context planning and implementation in the main session by default
-- Use the `planning` skill for compact planning, the `implementation` skill for coding conventions, the `test-engineering` skill for test design, and the `review` skill when you perform bounded review work yourself
+- Use the `fabys-planning` skill for the planning result contract and the optional `planning` skill as the project-specific planning instructions; use the `implementation` skill for coding conventions, the `test-engineering` skill for test design, and the `review` skill when you perform bounded review work yourself
 - Use the `fabys-exploration` skill for focused exploration
-- Use the `fabys-questions` skill whenever you need explicit user approval or a user decision point; always present the plan, get explicit approval before implementation, and ask whether review should run
+- Use the `fabys-questions` skill whenever you need explicit user approval or a user decision point
 - Use the `lint` and `test` skills for validation and never finish until they both pass with exit code 0 if not otherwise specified
 - Use the `todo` tool only for transient progress tracking; never treat it as workflow state
 - Delegate only isolated exploration, focused review, or clearly separable test authoring
@@ -42,6 +42,8 @@ Responsibilities:
 - Keep `state.json` as the single source of truth for resumable "/impl" runs
 - Never use file renames as workflow state
 - Finish only after required validation passes
+- Always output the full current plan before asking for approval; always get explicit approval before implementation
+- Ask whether review should run
 
 <retry_policy>
 
@@ -70,8 +72,8 @@ Before announcing completion, validate the deliverables for the mode you chose:
 
 **Planning:**
 
-- Inline mode: the conversation plan captures request summary, key design decisions, relevant files and patterns, validation strategy, test expectations, and sequencing constraints
-- Artifact mode: `./.plan/[feature-name]/plan.md` exists and contains the sections: Request, Key decisions, Relevant files and patterns, Validation strategy, Test expectations, Sequencing notes
+- Inline mode: the plan contains the request summary, key design decisions, relevant files and patterns, validation strategy, test expectations, sequencing constraints, and any material risks or open questions
+- Artifact mode: `./.plan/[feature-name]/plan.md` exists and contains the sections: Request, Key decisions, Relevant files and patterns, Validation strategy, Test expectations, Sequencing notes; any material risks or open questions are explicit
 - If `state.json` exists, it reflects the current stage, last completed action, and active artifacts
 
 **Implementation:**
@@ -165,13 +167,14 @@ Do not delegate the full implementation unless the user explicitly asks for that
 
 1. Explore only when needed.
    - Use the `fabys-exploration` skill for focused pattern discovery.
-2. Build a compact plan in the main session.
-   - Use the `planning` skill to load project-specific planning conventions.
-   - The plan should capture: request summary, key design decisions, relevant files and patterns, validation strategy, test expectations, and sequencing constraints.
+2. Build a compact but explicit plan in the main session.
+  - Use the `fabys-planning` skill for the required planning result, grounding expectations, and plan quality bar.
+  - Use the `planning` skill, if available, to load project-specific planning conventions.
+  - The plan should capture: grounded references, explicit invariants and edge cases where relevant, and request summary, key design decisions, relevant files and patterns, validation strategy, test expectations, sequencing constraints, plus any material risks or open questions.
 3. For one-session work, keep the plan in the conversation.
 4. For resumable or multi-session work, create `./.plan/[feature-name]/plan.md` and `./.plan/[feature-name]/state.json`.
 5. If material ambiguity remains after exploration, use the `fabys-questions` skill to ask only the smallest set of questions needed to unblock execution.
-6. Present the current plan to the user every time, explicitly stating whether it is inline or artifact mode and why that mode was chosen, alongside the inline mode summary or artifact mode plan.
+6. Present the full current plan to the user every time. Do not put the plan only inside a question prompt.
 7. Use the `fabys-questions` skill to ask for explicit approval before implementation begins.
 8. If the user requests plan changes or withholds approval, revise the plan and repeat the approval step. Never start implementation without explicit approval.
 
@@ -216,7 +219,7 @@ Validation is mandatory.
 
 The task is complete only when:
 
-- the plan was presented and approved by the user before implementation
+- the full plan was presented and approved by the user before implementation
 - the requested change is implemented
 - tests for changed behavior exist and pass
 - lint passes
