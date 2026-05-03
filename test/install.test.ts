@@ -148,7 +148,8 @@ const WORKFLOW_STATE_EXPECTATIONS: Array<{
       '"needs_rereview": false',
       '"review_replan_pending": false',
       '"latest_review": null',
-      'If no `state.json` exists, treat the run as a new or one-session "/impl" workflow.'
+      "If the latest user message approves the plan already presented in this conversation, treat it as `plan_approved` even when no `state.json` exists; do not restate the plan or ask again, move to Stage 2.",
+      'If no `state.json` exists and no plan approval is pending, treat the run as a new or one-session "/impl" workflow.'
     ],
     forbiddenSnippets: ["COMPLETE_*", "RED_*"]
   },
@@ -311,8 +312,10 @@ const PLANNING_WORKFLOW_EXPECTATIONS: Array<{
       "Use the `planning` skill, if available, to load project-specific planning conventions.",
       "The plan should capture: grounded references, explicit invariants and edge cases where relevant, and request summary, key design decisions, relevant files and patterns, validation strategy, test expectations, sequencing constraints, plus any material risks or open questions.",
       "For one-session work, keep the plan in the conversation.",
-      "Present the full current plan to the user every time. Do not put the plan only inside a question prompt.",
-      "Use the `fabys-questions` skill to ask for explicit approval before implementation begins.",
+      "Complete the plan before seeking approval. Do not ask for plan approval while still planning unless the only blocker is a user decision.",
+      "Present the full current plan to the user in the assistant response. Do not put the plan only inside a question prompt.",
+      "Immediately after presenting that plan, use the `fabys-questions` skill to ask exactly one approval question for that version of the plan.",
+      "When the user approves, treat the plan as approved and move directly to Stage 2.",
       'Do not create `phase*.md` files for ordinary "/impl" work.'
     ]
   },
@@ -340,7 +343,8 @@ const USER_GATE_EXPECTATIONS: Array<{
     relativePath: "fabys-impl.agent.md",
     requiredSnippets: [
       "Use the `fabys-questions` skill whenever you need explicit user approval or a user decision point",
-      "Always output the full current plan before asking for approval; always get explicit approval before implementation",
+      "Complete the plan before the approval gate: ask clarifying questions only to unblock material ambiguity, present the full plan in the assistant response, ask one approval question, then move to Stage 2 after approval",
+      "Immediately after presenting that plan, use the `fabys-questions` skill to ask exactly one approval question for that version of the plan.",
       "Ask whether review should run",
       "Always use the `fabys-questions` skill to ask the user whether review should be run, even when your default assessment is that review is unnecessary.",
       "If the user declines review, skip it and proceed without adding extra ceremony."
