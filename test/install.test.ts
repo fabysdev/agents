@@ -148,7 +148,9 @@ const WORKFLOW_STATE_EXPECTATIONS: Array<{
       '"needs_rereview": false',
       '"review_replan_pending": false',
       '"latest_review": null',
-      "If the latest user message approves the plan already presented in this conversation, treat it as `plan_approved` even when no `state.json` exists; do not restate the plan or ask again, move to Stage 2.",
+      "Inline mode has no `state.json`; use the visible conversation as state. A direct approval of a visible plan is equivalent to `plan_approved` and must advance to implementation.",
+      "Only set `plan_presented` after the full plan appeared in a normal assistant message before the approval prompt; a question-only prompt does not count.",
+      "If the latest user message approves a visible plan already presented in this conversation, treat it as `plan_approved` even when no `state.json` exists; do not restate the plan or ask again, move to Stage 2.",
       'If no `state.json` exists and no plan approval is pending, treat the run as a new or one-session "/impl" workflow.'
     ],
     forbiddenSnippets: ["COMPLETE_*", "RED_*"]
@@ -311,11 +313,11 @@ const PLANNING_WORKFLOW_EXPECTATIONS: Array<{
       "Use the `fabys-planning` skill for the required planning result, grounding expectations, and plan quality bar.",
       "Use the `planning` skill, if available, to load project-specific planning conventions.",
       "The plan should capture: grounded references, explicit invariants and edge cases where relevant, and request summary, key design decisions, relevant files and patterns, validation strategy, test expectations, sequencing constraints, plus any material risks or open questions.",
-      "For one-session work, keep the plan in the conversation.",
-      "Complete the plan before seeking approval. Do not ask for plan approval while still planning unless the only blocker is a user decision.",
-      "Present the full current plan to the user in the assistant response. Do not put the plan only inside a question prompt.",
-      "Immediately after presenting that plan, use the `fabys-questions` skill to ask exactly one approval question for that version of the plan.",
-      "When the user approves, treat the plan as approved and move directly to Stage 2.",
+      "**Inline mode:** keep the plan in the conversation for one-session work. Do not create `.plan/` files unless the task grows.",
+      "If material ambiguity or open questions remain, use the `fabys-questions` skill to ask only the smallest set of questions needed to unblock execution.",
+      "Present the full current plan to the user as one normal assistant message headed `Plan`. The plan must be fully visible before the approval question appears.",
+      "Use the `fabys-questions` skill to ask for explicit approval before implementation begins.",
+      "If the user approves, mark the plan approved and go directly to Stage 2.",
       'Do not create `phase*.md` files for ordinary "/impl" work.'
     ]
   },
@@ -342,12 +344,12 @@ const USER_GATE_EXPECTATIONS: Array<{
   {
     relativePath: "fabys-impl.agent.md",
     requiredSnippets: [
-      "Use the `fabys-questions` skill whenever you need explicit user approval or a user decision point",
-      "Complete the plan before the approval gate: ask clarifying questions only to unblock material ambiguity, present the full plan in the assistant response, ask one approval question, then move to Stage 2 after approval",
-      "Immediately after presenting that plan, use the `fabys-questions` skill to ask exactly one approval question for that version of the plan.",
-      "Ask whether review should run",
-      "Always use the `fabys-questions` skill to ask the user whether review should be run, even when your default assessment is that review is unnecessary.",
-      "If the user declines review, skip it and proceed without adding extra ceremony."
+      "`fabys-questions` skill for user decisions",
+      "Enforce the plan approval and ask whether review should run.",
+      "Present the full current plan to the user as one normal assistant message headed `Plan`.",
+      "Use the `fabys-questions` skill to ask for explicit approval before implementation begins.",
+      "Ask whether review should run using `fabys-questions` skill, include your review rationale, and respect the user's decision.",
+      "If the user declines, skip review."
     ]
   }
 ];

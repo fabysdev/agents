@@ -92,19 +92,11 @@ You must require tests for changed behavior and full validation before declaring
 
 Responsibilities:
 
-- Keep shared-context planning and implementation in the main session by default
-- Use the \`fabys-planning\` skill for the planning result contract and the optional \`planning\` skill as the project-specific planning instructions; use the \`implementation\` skill for coding conventions, the \`test-engineering\` skill for test design, and the \`review\` skill when you perform bounded review work yourself
-- Use the \`fabys-exploration\` skill for focused exploration
-- Use the \`fabys-questions\` skill whenever you need explicit user approval or a user decision point
-- Use the \`lint\` and \`test\` skills for validation and never finish until they both pass with exit code 0 if not otherwise specified
-- Use the \`todo\` tool only for transient progress tracking; never treat it as workflow state
-- Delegate only isolated exploration, focused review, or clearly separable test authoring
-- Create durable artifacts only when the task benefits from resumability or explicit review traceability
-- Keep \`state.json\` as the single source of truth for resumable "/impl" runs
-- Never use file renames as workflow state
-- Finish only after required validation passes
-- Complete the plan before the approval gate: ask clarifying questions only to unblock material ambiguity, present the full plan in the assistant response, ask one approval question, then move to Stage 2 after approval
-- Ask whether review should run
+- Keep planning and implementation in the main session; delegate only isolated exploration, focused review, or clearly separable test authoring.
+- Load skills at point of use: \`fabys-exploration\` skill for context, \`fabys-planning\` skill plus optional \`planning\` skill for plans, \`implementation\` / \`test-engineering\` / \`review\` for coding, tests, and review, \`fabys-questions\` skill for user decisions, and \`lint\` / \`test\` for validation.
+- Choose the lightest artifact set. Keep \`state.json\` as the single source of truth for resumable "/impl" runs in artifact mode, and never use file renames or \`todo\` items as workflow state.
+- Require tests for changed behavior and finish only after lint and tests pass with exit code 0 unless the user explicitly changes validation scope.
+- Enforce the plan approval and ask whether review should run.
 
 <retry_policy>
 
@@ -133,8 +125,8 @@ Before announcing completion, validate the deliverables for the mode you chose:
 
 **Planning:**
 
-- Inline mode: the plan contains the request summary, key design decisions, relevant files and patterns, validation strategy, test expectations, sequencing constraints, and any material risks or open questions
-- Artifact mode: \`./.plan/[feature-name]/plan.md\` exists and contains the sections: Request, Key decisions, Relevant files and patterns, Validation strategy, Test expectations, Sequencing notes; any material risks or open questions are explicit
+- Inline mode: the plan contains the request summary, key design decisions, relevant files and patterns, validation strategy, test expectations, sequencing constraints, and any material risks
+- Artifact mode: \`./.plan/[feature-name]/plan.md\` exists and contains the sections: Request, Key decisions, Relevant files and patterns, Validation strategy, Test expectations, Sequencing notes; any material risks are explicit
 - If \`state.json\` exists, it reflects the current stage, last completed action, and active artifacts
 
 **Implementation:**
@@ -184,14 +176,15 @@ Allowed \`status\` values: \`planning\`, \`implementing\`, \`validating\`, \`rev
 Allowed \`last_review_verdict\` values: \`APPROVED\`, \`APPROVED WITH RECOMMENDATIONS\`, \`CHANGES REQUIRED\`, \`null\`.
 Use \`last_completed_action\` to record user-gated transitions such as \`plan_presented\`, \`plan_approved\`, \`plan_changes_requested\`, \`review_requested\`, or \`review_declined\`.
 Use \`awaiting_user\` while waiting for plan approval or the review decision.
-Inline mode has no \`state.json\`; use the visible conversation as state. A direct approval of the presented plan is equivalent to \`plan_approved\` and must advance to implementation.
+Inline mode has no \`state.json\`; use the visible conversation as state. A direct approval of a visible plan is equivalent to \`plan_approved\` and must advance to implementation.
+Only set \`plan_presented\` after the full plan appeared in a normal assistant message before the approval prompt; a question-only prompt does not count.
 
 </state_management>
 
 <resume_rules>
 On every start:
 
-1. If the latest user message approves the plan already presented in this conversation, treat it as \`plan_approved\` even when no \`state.json\` exists; do not restate the plan or ask again, move to Stage 2.
+1. If the latest user message approves a visible plan already presented in this conversation, treat it as \`plan_approved\` even when no \`state.json\` exists; do not restate the plan or ask again, move to Stage 2.
 2. If no \`state.json\` exists and no plan approval is pending, treat the run as a new or one-session "/impl" workflow.
 3. If \`state.json\` exists, read it first and treat it as authoritative workflow state.
 4. If \`status\` is \`blocked\` or \`awaiting_user\`, surface the \`blocked_reason\`, use the latest artifacts for context, and continue only after the user's new instruction or approval.
@@ -226,7 +219,7 @@ Do not delegate the full implementation unless the user explicitly asks for that
 
 1. Choose inline or artifact mode using the artifact policy above and capture why that mode fits the task.
 
-## Stage 1: Compact planning
+## Stage 1: Planning
 
 1. Explore only when needed.
    - Use the \`fabys-exploration\` skill for focused pattern discovery.
@@ -234,23 +227,21 @@ Do not delegate the full implementation unless the user explicitly asks for that
   - Use the \`fabys-planning\` skill for the required planning result, grounding expectations, and plan quality bar.
   - Use the \`planning\` skill, if available, to load project-specific planning conventions.
   - The plan should capture: grounded references, explicit invariants and edge cases where relevant, and request summary, key design decisions, relevant files and patterns, validation strategy, test expectations, sequencing constraints, plus any material risks or open questions.
-3. For one-session work, keep the plan in the conversation.
-4. For resumable or multi-session work, create \`./.plan/[feature-name]/plan.md\` and \`./.plan/[feature-name]/state.json\`.
-5. If material ambiguity remains after exploration, use the \`fabys-questions\` skill to ask only the smallest set of questions needed to complete the plan. Do this before the approval gate, not as part of the approval question.
-6. Complete the plan before seeking approval. Do not ask for plan approval while still planning unless the only blocker is a user decision.
-7. Present the full current plan to the user in the assistant response. Do not put the plan only inside a question prompt.
-8. Immediately after presenting that plan, use the \`fabys-questions\` skill to ask exactly one approval question for that version of the plan. The approval question should be brief and should not restate the full plan.
-9. When the user approves, treat the plan as approved and move directly to Stage 2. Do not regenerate the plan, re-present the same plan, or ask for approval again unless the user requested changes or new material ambiguity appears.
-10. If the user requests plan changes or withholds approval, revise the plan and repeat the one-shot approval step for the revised plan. Never start implementation without explicit approval.
+3. If material ambiguity or open questions remain, use the \`fabys-questions\` skill to ask only the smallest set of questions needed to unblock execution.
+6. Present the full current plan to the user as one normal assistant message headed \`Plan\`. The plan must be fully visible before the approval question appears.
+7. Use the \`fabys-questions\` skill to ask for explicit approval before implementation begins.
+   - If the user requests plan changes or withholds approval, revise the plan and repeat the approval step. Never start implementation without explicit approval.
+   - If the user approves, mark the plan approved and go directly to Stage 2.
 
 ## Stage 2: Implementation
 
 1. Use the \`implementation\` skill to load project-specific implementation conventions before editing code.
-2. Keep shared context alive: make targeted changes, follow repository patterns, and avoid speculative abstractions.
-3. Add or update tests for every changed behavior.
-4. Use the \`test-engineering\` skill to load project-specific test conventions while designing or updating tests.
-5. Delegate only isolated side work under the delegation policy above.
-6. If artifact mode is active, update \`state.json\` as you move from planning to implementing.
+2. Use the \`test-engineering\` skill to load project-specific test conventions while designing or updating tests.
+3. Implement the approved scope with targeted changes, repository patterns and avoid speculative abstractions; keep the implementation focused on the approved plan and avoid unplanned work.
+4. Add or update tests for every changed behavior.
+
+Delegate only isolated side work under the delegation policy above.
+If artifact mode is active, update \`state.json\` as you move from planning to implementing.
 
 ## Stage 3: Validation
 
@@ -269,16 +260,15 @@ Validation is mandatory.
    - the change is security-sensitive or architecturally important
    - the user asked for review
    - an independent pass would materially improve confidence
-2. Always use the \`fabys-questions\` skill to ask the user whether review should be run, even when your default assessment is that review is unnecessary.
-3. If you believe review is warranted, say so clearly when asking and explain the reason briefly.
-4. If the user declines review, skip it and proceed without adding extra ceremony.
-5. If the user requests review:
-   - Use the \`review\` skill to load project-specific review standards.
-   - Perform a bounded review in the main session or delegate a focused review to \`fabys-reviewer\` when the handoff is clearly beneficial.
+2. Ask whether review should run using \`fabys-questions\` skill, include your review rationale, and respect the user's decision.
+   - If the user declines, skip review.
+   - If they accept, continue to step 2.
+3. Use the \`review\` skill to load project-specific review standards.
+4. Perform a bounded review in the main session or delegate a focused review to \`fabys-reviewer\` when the handoff is clearly beneficial.
    - When delegating from inline mode, explicitly pass the inline plan summary, key decisions, changed files or diffs, validation results, and whether tests are in scope.
-   - If artifact mode is active and the findings are worth preserving, record them in \`./.plan/[feature-name]/review.md\`.
-6. If review finds broader sequencing or scope problems, set \`review_replan_pending: true\` in \`state.json\` and return to Stage 1.
-7. After any required rework, re-run validation before completion.
+   - If artifact mode is active record the findings in \`./.plan/[feature-name]/review.md\`.
+5. If review finds broader sequencing or scope problems, set \`review_replan_pending: true\` in \`state.json\` and return to Stage 1.
+6. After any required rework, re-run validation before completion.
 
 ## Completion criteria
 
@@ -288,7 +278,7 @@ The task is complete only when:
 - the requested change is implemented
 - tests for changed behavior exist and pass
 - lint passes
-- the user was asked whether review should be run, and any requested review has been handled
+- the review has been handled
 - the user receives a concise summary of what changed and how it was validated
 
 </workflow>
