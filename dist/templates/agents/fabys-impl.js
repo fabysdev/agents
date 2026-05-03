@@ -98,7 +98,7 @@ Responsibilities:
 - Keep \`state.json\` as the single source of truth for resumable "/impl" runs
 - Never use file renames as workflow state
 - Finish only after required validation passes
-- Always output the full current plan before asking for approval; always get explicit approval before implementation
+- Complete the plan before the approval gate: ask clarifying questions only to unblock material ambiguity, present the full plan in the assistant response, ask one approval question, then move to Stage 2 after approval
 - Ask whether review should run
 
 <retry_policy>
@@ -179,18 +179,20 @@ Allowed \`status\` values: \`planning\`, \`implementing\`, \`validating\`, \`rev
 Allowed \`last_review_verdict\` values: \`APPROVED\`, \`APPROVED WITH RECOMMENDATIONS\`, \`CHANGES REQUIRED\`, \`null\`.
 Use \`last_completed_action\` to record user-gated transitions such as \`plan_presented\`, \`plan_approved\`, \`plan_changes_requested\`, \`review_requested\`, or \`review_declined\`.
 Use \`awaiting_user\` while waiting for plan approval or the review decision.
+Inline mode has no \`state.json\`; use the visible conversation as state. A direct approval of the presented plan is equivalent to \`plan_approved\` and must advance to implementation.
 
 </state_management>
 
 <resume_rules>
 On every start:
 
-1. If no \`state.json\` exists, treat the run as a new or one-session "/impl" workflow.
-2. If \`state.json\` exists, read it first and treat it as authoritative workflow state.
-3. If \`status\` is \`blocked\` or \`awaiting_user\`, surface the \`blocked_reason\`, use the latest artifacts for context, and continue only after the user's new instruction or approval.
-4. If \`review_replan_pending\` is \`true\`, resume Stage 1 using \`review.md\` or the latest review findings as input.
-5. If \`current_stage\` is \`implementing\`, \`validating\`, or \`reviewing\`, resume that stage instead of restarting the workflow.
-6. If validation already passed and \`last_completed_action\` shows that the user declined review, complete the workflow instead of re-running earlier stages.
+1. If the latest user message approves the plan already presented in this conversation, treat it as \`plan_approved\` even when no \`state.json\` exists; do not restate the plan or ask again, move to Stage 2.
+2. If no \`state.json\` exists and no plan approval is pending, treat the run as a new or one-session "/impl" workflow.
+3. If \`state.json\` exists, read it first and treat it as authoritative workflow state.
+4. If \`status\` is \`blocked\` or \`awaiting_user\`, surface the \`blocked_reason\`, use the latest artifacts for context, and continue only after the user's new instruction or approval.
+5. If \`review_replan_pending\` is \`true\`, resume Stage 1 using \`review.md\` or the latest review findings as input.
+6. If \`current_stage\` is \`implementing\`, \`validating\`, or \`reviewing\`, resume that stage instead of restarting the workflow.
+7. If validation already passed and \`last_completed_action\` shows that the user declined review, complete the workflow instead of re-running earlier stages.
 
 </resume_rules>
 
@@ -229,10 +231,12 @@ Do not delegate the full implementation unless the user explicitly asks for that
   - The plan should capture: grounded references, explicit invariants and edge cases where relevant, and request summary, key design decisions, relevant files and patterns, validation strategy, test expectations, sequencing constraints, plus any material risks or open questions.
 3. For one-session work, keep the plan in the conversation.
 4. For resumable or multi-session work, create \`./.plan/[feature-name]/plan.md\` and \`./.plan/[feature-name]/state.json\`.
-5. If material ambiguity remains after exploration, use the \`fabys-questions\` skill to ask only the smallest set of questions needed to unblock execution.
-6. Present the full current plan to the user every time. Do not put the plan only inside a question prompt.
-7. Use the \`fabys-questions\` skill to ask for explicit approval before implementation begins.
-8. If the user requests plan changes or withholds approval, revise the plan and repeat the approval step. Never start implementation without explicit approval.
+5. If material ambiguity remains after exploration, use the \`fabys-questions\` skill to ask only the smallest set of questions needed to complete the plan. Do this before the approval gate, not as part of the approval question.
+6. Complete the plan before seeking approval. Do not ask for plan approval while still planning unless the only blocker is a user decision.
+7. Present the full current plan to the user in the assistant response. Do not put the plan only inside a question prompt.
+8. Immediately after presenting that plan, use the \`fabys-questions\` skill to ask exactly one approval question for that version of the plan. The approval question should be brief and should not restate the full plan.
+9. When the user approves, treat the plan as approved and move directly to Stage 2. Do not regenerate the plan, re-present the same plan, or ask for approval again unless the user requested changes or new material ambiguity appears.
+10. If the user requests plan changes or withholds approval, revise the plan and repeat the one-shot approval step for the revised plan. Never start implementation without explicit approval.
 
 ## Stage 2: Implementation
 
