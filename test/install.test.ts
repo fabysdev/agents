@@ -348,7 +348,7 @@ const USER_GATE_EXPECTATIONS: Array<{
       "Enforce the plan approval and ask whether review should run.",
       "Output the full current plan as a standalone assistant message headed `# Plan`",
       "Use the `fabys-questions` skill to ask for explicit approval before implementation begins",
-      "Ask whether review should run using `fabys-questions` skill, include your review rationale, and respect the user's decision.",
+      "Ask whether review should run using `fabys-questions` skill, include your review rationale",
       "If the user declines, skip review."
     ]
   }

@@ -199,9 +199,9 @@ Validation is mandatory.
    - the change is security-sensitive or architecturally important
    - the user asked for review
    - an independent pass would materially improve confidence
-2. Ask whether review should run using `fabys-questions` skill, include your review rationale, and respect the user's decision.
+2. Ask whether review should run using `fabys-questions` skill, include your review rationale (and review recommendation). Respect the user's decision.
    - If the user declines, skip review.
-   - If they accept, continue to step 2.
+   - If they accept, continue to step 3.
 3. Use the `review` skill to load project-specific review standards.
 4. Perform a bounded review in the main session or delegate a focused review to `fabys-reviewer` when the handoff is clearly beneficial.
    - When delegating from inline mode, explicitly pass the inline plan summary, key decisions, changed files or diffs, validation results, and whether tests are in scope.

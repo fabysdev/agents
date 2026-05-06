@@ -1,6 +1,6 @@
 ---
 name: fabys-questions
-description: Use this skill whenever you need to ask the user a blocking user-facing question, including clarification, missing requirements, choices, decisions, or explicit confirmation before proceeding.
+description: Use this skill whenever you need to get input from the user. This includes: clarifying ambiguities, gathering missing requirements, asking the user to choose between options, and requesting explicit confirmation or approval before proceeding.
 user-invocable: false
 ---
 
