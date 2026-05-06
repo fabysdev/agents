@@ -223,9 +223,9 @@ Do not delegate the full implementation unless the user explicitly asks for that
   - Use the \`planning\` skill, if available, to load project-specific planning conventions.
   - The plan should capture: grounded references, explicit invariants and edge cases where relevant, and request summary, key design decisions, relevant files and patterns, validation strategy, test expectations, sequencing constraints, plus any material risks or open questions.
 3. If material ambiguity or open questions remain, use the \`fabys-questions\` skill to ask only the smallest set of questions needed to unblock execution.
-6. Present the full current plan to the user as one normal assistant message headed \`#Plan\`. Don't use the question prompt to present the plan.
-7. Use the \`fabys-questions\` skill to ask for explicit approval before implementation begins.
-   - If the user requests plan changes or withholds approval, revise the plan and repeat the approval step. Never start implementation without explicit approval.
+4. Output the full current plan as a standalone assistant message headed \`# Plan\`. Do NOT combine this with the approval request.
+5. Use the \`fabys-questions\` skill to ask for explicit approval before implementation begins. The prompt must not re-summarize or repeat the plan.
+   - If the user requests changes or withholds approval, revise and re-emit the plan (step 1-4), then re-ask approval (step 5). Never start implementation without explicit approval.
    - If the user approves, mark the plan approved and go directly to Stage 2.
 
 ## Stage 2: Implementation
