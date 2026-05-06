@@ -315,8 +315,8 @@ const PLANNING_WORKFLOW_EXPECTATIONS: Array<{
       "The plan should capture: grounded references, explicit invariants and edge cases where relevant, and request summary, key design decisions, relevant files and patterns, validation strategy, test expectations, sequencing constraints, plus any material risks or open questions.",
       "**Inline mode:** keep the plan in the conversation for one-session work. Do not create `.plan/` files unless the task grows.",
       "If material ambiguity or open questions remain, use the `fabys-questions` skill to ask only the smallest set of questions needed to unblock execution.",
-      "Output the full current plan as a standalone assistant message headed `# Plan`. Do NOT combine this with the approval request.",
-      "Use the `fabys-questions` skill to ask for explicit approval before implementation begins.",
+      "Output the full current plan as a standalone assistant message headed `# Plan`",
+      "Use the `fabys-questions` skill to ask for explicit approval before implementation begins",
       "If the user approves, mark the plan approved and go directly to Stage 2.",
       'Do not create `phase*.md` files for ordinary "/impl" work.'
     ]
@@ -346,8 +346,8 @@ const USER_GATE_EXPECTATIONS: Array<{
     requiredSnippets: [
       "`fabys-questions` skill for user decisions",
       "Enforce the plan approval and ask whether review should run.",
-      "Output the full current plan as a standalone assistant message headed `# Plan`. Do NOT combine this with the approval request.",
-      "Use the `fabys-questions` skill to ask for explicit approval before implementation begins.",
+      "Output the full current plan as a standalone assistant message headed `# Plan`",
+      "Use the `fabys-questions` skill to ask for explicit approval before implementation begins",
       "Ask whether review should run using `fabys-questions` skill, include your review rationale, and respect the user's decision.",
       "If the user declines, skip review."
     ]
