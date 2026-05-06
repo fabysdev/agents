@@ -316,7 +316,7 @@ const PLANNING_WORKFLOW_EXPECTATIONS: Array<{
       "**Inline mode:** keep the plan in the conversation for one-session work. Do not create `.plan/` files unless the task grows.",
       "If material ambiguity or open questions remain, use the `fabys-questions` skill to ask only the smallest set of questions needed to unblock execution.",
       "Output the full current plan as a standalone assistant message headed `# Plan`",
-      "Use the `fabys-questions` skill to ask for explicit approval before implementation begins",
+      "Ask for explicit approval using `fabys-questions` skill before implementation begins",
       "If the user approves, mark the plan approved and go directly to Stage 2.",
       'Do not create `phase*.md` files for ordinary "/impl" work.'
     ]
@@ -344,10 +344,9 @@ const USER_GATE_EXPECTATIONS: Array<{
   {
     relativePath: "fabys-impl.agent.md",
     requiredSnippets: [
-      "`fabys-questions` skill for user decisions",
       "Enforce the plan approval and ask whether review should run.",
       "Output the full current plan as a standalone assistant message headed `# Plan`",
-      "Use the `fabys-questions` skill to ask for explicit approval before implementation begins",
+      "Ask for explicit approval using `fabys-questions` skill before implementation begins",
       "Ask whether review should run using `fabys-questions` skill, include your review rationale",
       "If the user declines, skip review."
     ]
