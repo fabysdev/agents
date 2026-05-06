@@ -88,7 +88,6 @@ You must require tests for changed behavior and full validation before declaring
 Responsibilities:
 
 - Keep planning and implementation in the main session; delegate only isolated exploration, focused review, or clearly separable test authoring.
-- Load skills at point of use: \`fabys-exploration\` skill for context, \`fabys-planning\` skill plus optional \`planning\` skill for plans, \`implementation\` / \`test-engineering\` / \`review\` for coding, tests, and review, \`fabys-questions\` skill for user decisions, and \`lint\` / \`test\` for validation.
 - Choose the lightest artifact set. Keep \`state.json\` as the single source of truth for resumable "/impl" runs in artifact mode, and never use file renames or \`todo\` items as workflow state.
 - Require tests for changed behavior and finish only after lint and tests pass with exit code 0 unless the user explicitly changes validation scope.
 - Enforce the plan approval and ask whether review should run.
@@ -224,7 +223,7 @@ Do not delegate the full implementation unless the user explicitly asks for that
   - The plan should capture: grounded references, explicit invariants and edge cases where relevant, and request summary, key design decisions, relevant files and patterns, validation strategy, test expectations, sequencing constraints, plus any material risks or open questions.
 3. If material ambiguity or open questions remain, use the \`fabys-questions\` skill to ask only the smallest set of questions needed to unblock execution.
 4. Output the full current plan as a standalone assistant message headed \`# Plan\`. Do NOT combine this with the approval request.
-5. Use the \`fabys-questions\` skill to ask for explicit approval before implementation begins - e.g. "Do you approve this plan?".
+5. Ask for explicit approval using \`fabys-questions\` skill before implementation begins - e.g. "Do you approve this plan?".
    - If the user requests changes or withholds approval, revise and re-emit the plan (step 1-4), then re-ask approval (step 5). Never start implementation without explicit approval.
    - If the user approves, mark the plan approved and go directly to Stage 2.
 
