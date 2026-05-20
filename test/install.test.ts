@@ -180,6 +180,7 @@ const WORKFLOW_STATE_EXPECTATIONS: Array<{
       "`state.json` marks a phase as `red_complete` after Red and `complete` after Green",
       '"status": "planning"',
       '"current_stage": "planning"',
+      '"plan_approved": false',
       '"review_cycle": 0',
       '"last_review_file": null',
       '"last_review_verdict": null',
@@ -187,6 +188,10 @@ const WORKFLOW_STATE_EXPECTATIONS: Array<{
       '"review_replan_pending": false',
       '"latest_review": null',
       "Reviews are append-only and numbered.",
+      "Initialize `plan_approved` as `false`. Keep it `false` whenever the workflow is waiting for initial plan confirmation.",
+      "Treat missing `plan_approved` as `false`.",
+      "If the user approves an initial plan, update `state.json` with `plan_approved: true`",
+      "If the user approves a review-driven replan, keep `plan_approved: true`",
       "If `review_replan_pending` is `true`, resume Stage 1 using `last_review_file` and the latest reviewer findings as inputs."
     ],
     forbiddenSnippets: ["COMPLETE_*", "RED_*"]
