@@ -1001,21 +1001,48 @@ describe("loadFabysAgentConfig", () => {
     assert.throws(loadUnsupportedToolConfig, /unsupported opencode config keys/i);
   });
 
-  it("throws when model overrides use unsupported agents or invalid values", (): void => {
+  it("ignores model overrides for agents owned by other Fabys tools", (): void => {
     // Arrange
     writeJsonFile(tempRoot, FABYS_AGENTS_CONFIG_FILENAME, {
       opencode: {
         models: {
-          unknown: "openai/gpt-5.5"
+          "fabys-forge-brainstorm": "openai/gpt-5.5",
+          "fabys-tdd": "openai/gpt-5.4"
         }
       }
     });
 
     // Act
-    const loadUnsupportedAgentConfig = (): ReturnType<typeof loadFabysAgentConfig> => loadFabysAgentConfig({cwd: tempRoot});
+    const loadedConfig = loadFabysAgentConfig({cwd: tempRoot});
 
     // Assert
-    assert.throws(loadUnsupportedAgentConfig, /unsupported agent model override/i);
+    assert.deepStrictEqual(loadedConfig.config, {
+      opencode: {
+        models: {
+          "fabys-tdd": "openai/gpt-5.4"
+        }
+      }
+    });
+
+    writeJsonFile(tempRoot, FABYS_AGENTS_CONFIG_FILENAME, {
+      opencode: {
+        models: {
+          "fabys-forge-brainstorm": 42
+        }
+      }
+    });
+
+    const loadedConfigWithInvalidUnknownAgent = loadFabysAgentConfig({cwd: tempRoot});
+
+    assert.deepStrictEqual(loadedConfigWithInvalidUnknownAgent.config, {
+      opencode: {
+        models: {}
+      }
+    });
+  });
+
+  it("throws when model overrides use invalid values", (): void => {
+    // Arrange
 
     writeJsonFile(tempRoot, FABYS_AGENTS_CONFIG_FILENAME, {
       opencode: {
