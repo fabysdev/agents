@@ -96,6 +96,7 @@ The ISO-8601 timestamp should be generated at the moment of state update (e.g., 
 {
   "feature": "feature-name",
   "workflow": "tdd",
+  "plan_approved": false,
   "status": "planning",
   "current_stage": "planning",
   "current_phase_file": null,
@@ -130,6 +131,8 @@ Allowed `last_review_verdict` values: `APPROVED`, `APPROVED WITH RECOMMENDATIONS
 
 - Reviews are append-only and numbered.
 - `review_cycle` picks the next file, `last_review_*` records the latest verdict, `needs_rereview` requests another pass, and `review_replan_pending` returns to Planning after `REPLAN_REQUIRED`.
+- Initialize `plan_approved` as `false`. Keep it `false` whenever the workflow is waiting for initial plan confirmation.
+- Treat missing `plan_approved` as `false`.
 
 </state_management>
 
@@ -209,8 +212,8 @@ On every start:
 5. Before asking the user to confirm the plan, set `status: "awaiting_user"` with `blocked_reason: "plan confirmation required"`.
 6. Use the `fabys-questions` skill to verify the plan with the user before proceeding to implementation.
    - If the user requests changes, clear the blocked state and return to step 2 with the requested feedback.
-   - If the user approves an initial plan, update `state.json` with `current_stage: "implementing"`, `status: "implementing"`, `artifacts.plan`, and all discovered phase files as `pending`.
-   - If the user approves a review-driven replan, keep completed phases complete, add only the new phases as `pending`, clear `review_replan_pending`, and keep `needs_rereview: true`.
+   - If the user approves an initial plan, update `state.json` with `plan_approved: true`, `current_stage: "implementing"`, `status: "implementing"`, `current_phase_file: null`, `current_phase_step: null`, `blocked_reason: null`, `last_completed_action: "plan_approved"`, `artifacts.plan`, and all discovered phase files as `pending`.
+   - If the user approves a review-driven replan, keep `plan_approved: true`, keep completed phases complete, add only the new phases as `pending`, clear `review_replan_pending`, and keep `needs_rereview: true`.
 7. Output: "✓ Stage 1 Complete: Planning." Proceed to Stage 2.
 
 ## Stage 2: Implementation — Per-Phase TDD Red/Green
@@ -235,7 +238,7 @@ On every start:
 ## Stage 3: Review
 
 1. Determine the next numbered review file from `review_cycle + 1` (for example `review-01.md`), set `status: "reviewing"` and `current_stage: "reviewing"`.
-2. Invoke fabys-reviewer for a comprehensive review against plan and quality standards. 
+2. Invoke fabys-reviewer for a comprehensive review against plan and quality standards.
    - Include the numbered review file name in the prompt so the reviewer can record findings and a clear verdict there.
 3. Validate output per Stage 3 rules above.
 4. After each reviewer run, increment `review_cycle`, record `last_review_file` and `last_review_verdict`, and store `artifacts.latest_review`.

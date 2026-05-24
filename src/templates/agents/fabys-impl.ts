@@ -137,7 +137,7 @@ Before announcing completion, validate the deliverables for the mode you chose:
 
 **Review (when run):**
 
-- Inline mode: the review outcome is summarized to the user with concrete follow-up actions or explicit approval
+- Inline mode: the delegated review outcome is summarized to the user with concrete follow-up actions or explicit approval
 - Artifact mode: \`./.plan/[feature-name]/review.md\` exists and records the scope, findings, validation summary, and verdict
 
 If validation fails, do NOT finish. Fix the issue or stop with a specific blocked reason.
@@ -263,7 +263,7 @@ Validation is mandatory.
    - If the user declines, skip review.
    - If they accept, continue to step 3.
 3. Use the \`review\` skill to load project-specific review standards.
-4. Perform a bounded review in the main session or delegate a focused review to \`fabys-reviewer\` when the handoff is clearly beneficial.
+4. Delegate a bounded review to \`fabys-reviewer\`. Do not perform the review in the main session.
    - When delegating from inline mode, explicitly pass the inline plan summary, key decisions, changed files or diffs, validation results, and whether tests are in scope.
    - If artifact mode is active record the findings in \`./.plan/[feature-name]/review.md\`.
 5. If review finds broader sequencing or scope problems, set \`review_replan_pending: true\` in \`state.json\` and return to Stage 1.
