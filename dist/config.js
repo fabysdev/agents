@@ -103,7 +103,7 @@ function normalizeModelsConfig(value, configPath, tool) {
     const normalizedModels = {};
     for (const [agentName, configuredModel] of Object.entries(value)) {
         if (!VALID_AGENT_NAMES.has(agentName)) {
-            throw new Error(`Unsupported agent model override in ${configPath}: ${agentName}.`);
+            continue;
         }
         if (typeof configuredModel !== "string") {
             throw new Error(`Expected model override for ${agentName} in ${configPath} to be a string.`);
